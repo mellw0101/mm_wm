@@ -84,7 +84,7 @@
 
 #include "Log.hpp"
 #include "xcb.hpp"
-Logger logger;
+// Logger logger;
 #include "structs.hpp"
 #include "defenitions.hpp"
 #include "tools.hpp"
@@ -1922,11 +1922,11 @@ class mxb
                 bool extensionPresent = reply[1];
                 if (extensionPresent)
                 {
-                    log_info("BIG-REQUESTS extension is supported by the X server."); 
+                    loutE << "BIG-REQUESTS extension is supported by the X server" << loutEND;
                 }
                 else
                 {
-                    log_info("BIG-REQUESTS extension is not supported by the X server.");
+                    loutE << "BIG-REQUESTS extension is not supported by the X server" << loutEND;
                 }
             }
             
@@ -4854,30 +4854,36 @@ class window
                 // Get the atom for the _MOTIF_WM_HINTS property
                 xcb_intern_atom_cookie_t cookie = xcb_intern_atom(conn, 0, strlen(MOTIF_WM_HINTS), MOTIF_WM_HINTS);
                 xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(conn, cookie, NULL);
-                if (!reply) {
-                    log_error("reply = nullptr");
+                if (!reply)
+                {
+                    loutE << "reply = nullptr" << loutEND;
                     return true; // Default to decorating if we can't check
+                }
 
-                } xcb_atom_t motif_wm_hints_atom = reply->atom; free(reply);
+                xcb_atom_t motif_wm_hints_atom = reply->atom; free(reply);
 
                 // Try to get the _MOTIF_WM_HINTS property from the window
                 xcb_get_property_cookie_t prop_cookie = xcb_get_property(conn, 0, _window, motif_wm_hints_atom, XCB_ATOM_ANY, 0, sizeof(uint32_t) * 5);
                 xcb_get_property_reply_t* prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
 
-                if (prop_reply && xcb_get_property_value_length(prop_reply) >= sizeof(uint32_t) * 5) {
+                if (prop_reply && xcb_get_property_value_length(prop_reply) >= sizeof(uint32_t) * 5)
+                {
                     uint32_t* hints = (uint32_t*)xcb_get_property_value(prop_reply);
                     
-                    // The second uint32_t in the hints indicates decoration status
-                    // flags are in the second uint32_t of the property
-                    bool decorate = !(hints[1] & (1 << 1)); // Check if decorations are disabled
+                    // Check if decorations are disabled
+                    bool decorate = !(hints[1] & (1 << 1));
 
                     free(prop_reply);
                     return decorate;
+                }
 
-                } if (prop_reply) free(prop_reply);
+                if (prop_reply)
+                {
+                    free(prop_reply);
+                }
 
-                return true; // Default to decorating if we can't find or interpret the hints
-
+                // Default to decorating if we can't find or interpret the hints
+                return true;
             }
         
         /* Set           */
@@ -6517,7 +6523,7 @@ class window
                     FILE *fp = fopen(file_name, "wb"); 
                     if (!fp)
                     {
-                        log_error("Failed to open file: " + std::string(file_name));
+                        loutE << "Failed to open file: " << file_name << loutEND;
                         return;
                     }
 
@@ -6525,7 +6531,7 @@ class window
                     if (!png_ptr)
                     {
                         fclose(fp);
-                        log_error("Failed to create PNG write struct");
+                        loutE << "Failed to create PNG write struct" << loutEND;
                         return;
                     }
 
@@ -6534,7 +6540,7 @@ class window
                     {
                         fclose(fp);
                         png_destroy_write_struct(&png_ptr, NULL);
-                        log_error("Failed to create PNG info struct");
+                        loutE << "Failed to create PNG info struct" << loutEND;
                         return;
                     }
 
@@ -6542,7 +6548,7 @@ class window
                     {
                         fclose(fp);
                         png_destroy_write_struct(&png_ptr, &info_ptr);
-                        log_error("Error during PNG creation");
+                        loutE << "Error during PNG creation" << loutEND;
                         return;
                     }
 
@@ -6582,7 +6588,7 @@ class window
                     if (!png_ptr)
                     {
                         fclose(fp);
-                        log_error("Failed to create PNG write struct");
+                        loutE << "Failed to create PNG write struct" << loutEND;
                         return;
                     }
 
@@ -6591,7 +6597,7 @@ class window
                     {
                         fclose(fp);
                         png_destroy_write_struct(&png_ptr, NULL);
-                        log_error("Failed to create PNG info struct");
+                        loutE << "Failed to create PNG info struct" << loutEND;
                         return;
                     }
 
@@ -6599,7 +6605,7 @@ class window
                     {
                         fclose(fp);
                         png_destroy_write_struct(&png_ptr, &info_ptr);
-                        log_error("Error during PNG creation");
+                        loutE << "Error during PNG creation" << loutEND;
                         return;
                     }
 
@@ -9373,49 +9379,49 @@ class Window_Manager
                 {
                     case CONN_ERR:
                     {
-                        log_error("Connection error.");
+                        loutE << "Connection error" << loutEND;
                         quit(CONN_ERR);
                         break;
                     }
 
                     case EXTENTION_NOT_SUPPORTED_ERR:
                     {
-                        log_error("Extension not supported.");
+                        loutE << "Extension not supported" << loutEND;
                         quit(EXTENTION_NOT_SUPPORTED_ERR);
                         break;
                     }
                
                     case MEMORY_INSUFFICIENT_ERR:
                     {
-                        log_error("Insufficient memory.");
+                        loutE << "Insufficient memory" << loutEND;
                         quit(MEMORY_INSUFFICIENT_ERR);
                         break;
                     }
       
                     case REQUEST_TO_LONG_ERR:
                     {
-                        log_error("Request to long.");
+                        loutE << "Request to long" << loutEND;
                         quit(REQUEST_TO_LONG_ERR);
                         break;
                     }
 
                     case PARSE_ERR:
                     {
-                        log_error("Parse error.");
+                        loutE << "Parse error" << loutEND;
                         quit(PARSE_ERR);
                         break;
                     }
 
                     case SCREEN_NOT_FOUND_ERR:
                     {
-                        log_error("Screen not found.");
+                        loutE << "Screen not found" << loutEND;
                         quit(SCREEN_NOT_FOUND_ERR);
                         break;
                     }
 
                     case FD_ERR:
                     {
-                        log_error("File descriptor error.");
+                        loutE << "File descriptor error." << loutEND;
                         quit(FD_ERR);
                         break;
                     }
@@ -9445,7 +9451,7 @@ class Window_Manager
                 xcb_generic_error_t *err = xcb_request_check(conn, cookie);
                 if (err)
                 {
-                    log_error_code(err_msg, err->error_code);
+                    loutE << ERRNO_MSG(err_msg) << " error_code:" << err->error_code << loutEND;
                     free(err);
                 }
             }
@@ -9458,6 +9464,7 @@ class Window_Manager
                     send_sigterm_to_client(c);
                     xcb_flush(conn);    
                 }
+
                 vec.clear();
                 vector<client *>().swap(vec);
             }
@@ -9469,6 +9476,7 @@ class Window_Manager
                     delete_client_vec__(d->current_clients);
                     delete d;
                 }
+
                 vec.clear();
                 vector<desktop *>().swap(vec);
             }
@@ -10032,7 +10040,7 @@ class __status_bar__
 {
     private:
     /* Methods */
-        void create_windows__()
+        void create_windows_()
         {
             _w[_BAR].create_window
             (
@@ -10077,15 +10085,16 @@ class __status_bar__
             ConnSig(_w[_WIFI], L_MOUSE_BUTTON_EVENT,
                 if (this->_w[_WIFI_DROPWOWN].is_mapped())
                 {
-                    hide__(this->_w[_WIFI_DROPWOWN]);
+                    hide_(this->_w[_WIFI_DROPWOWN]);
                 }
                 else
                 {
                     if (_w[_AUDIO_DROPDOWN].is_mapped())
                     {
-                        hide__(_w[_AUDIO_DROPDOWN]);
+                        hide_(_w[_AUDIO_DROPDOWN]);
                     }
-                    show__(_w[_WIFI_DROPWOWN]);
+
+                    show_(_w[_WIFI_DROPWOWN]);
                     _w[_WIFI_INFO].send_event(XCB_EVENT_MASK_EXPOSURE);
                     _w[_WIFI_CLOSE].send_event(XCB_EVENT_MASK_EXPOSURE);
                 }
@@ -10139,15 +10148,16 @@ class __status_bar__
             ConnSig(_w[_AUDIO], L_MOUSE_BUTTON_EVENT,
                 if (_w[_AUDIO_DROPDOWN].is_mapped())
                 {
-                    hide__(_w[_AUDIO_DROPDOWN]);
+                    hide_(_w[_AUDIO_DROPDOWN]);
                 }
                 else
                 {
                     if (_w[_WIFI_DROPWOWN].is_mapped())
                     {
-                        hide__(_w[_WIFI_DROPWOWN]);
+                        hide_(_w[_WIFI_DROPWOWN]);
                     }
-                    show__(_w[_AUDIO_DROPDOWN]);
+
+                    show_(_w[_AUDIO_DROPDOWN]);
                 }
             );
 
@@ -10160,9 +10170,9 @@ class __status_bar__
             );
         }
 
-        void show__(uint32_t __window)
+        void show_(uint32_t window)
         {
-            if (__window == _w[_WIFI_DROPWOWN])
+            if (window == _w[_WIFI_DROPWOWN])
             {
                 _w[_WIFI_DROPWOWN].create_window
                 (
@@ -10192,7 +10202,7 @@ class __status_bar__
                 );
 
                 ConnSig(_w[_WIFI_CLOSE], L_MOUSE_BUTTON_EVENT,
-                    hide__(_w[_WIFI_DROPWOWN]);
+                    hide_(_w[_WIFI_DROPWOWN]);
                 );
 
                 ConnSig(_w[_WIFI_CLOSE], XCB_EXPOSE,
@@ -10233,7 +10243,7 @@ class __status_bar__
                 _w[_WIFI_INFO].send_event(XCB_EVENT_MASK_EXPOSURE);
             }
             
-            if (__window == _w[_AUDIO_DROPDOWN])
+            if (window == _w[_AUDIO_DROPDOWN])
             {
                 _w[_AUDIO_DROPDOWN].create_window
                 (
@@ -10250,9 +10260,9 @@ class __status_bar__
             }
         }
         
-        void hide__(uint32_t __window)
+        void hide_(uint32_t window)
         {
-            if (__window == _w[_WIFI_DROPWOWN])
+            if (window == _w[_WIFI_DROPWOWN])
             {
                 _w[_WIFI_CLOSE].unmap();
                 _w[_WIFI_CLOSE].kill();
@@ -10262,16 +10272,16 @@ class __status_bar__
                 _w[_WIFI_DROPWOWN].kill();
             }
 
-            if (__window == _w[_AUDIO_DROPDOWN])
+            if (window == _w[_AUDIO_DROPDOWN])
             {
                 _w[_AUDIO_DROPDOWN].unmap();
                 _w[_AUDIO_DROPDOWN].kill();
             }
         }
         
-        void setup_thread__(uint32_t __w)
+        void setup_thread_(uint32_t window)
         {
-            if (__w == _w[_TIME_DATE])
+            if (window == _w[_TIME_DATE])
             {
                 function<void()> __time__ = [this]() -> void
                 {
@@ -10281,6 +10291,7 @@ class __status_bar__
                         this_thread::sleep_for(chrono::seconds(1));
                     }
                 };
+
                 thread(__time__).detach();
             }
         }
@@ -10297,6 +10308,7 @@ class __status_bar__
                 "%Y-%m-%d %H:%M:%S",
                 localtime(&now)
             );
+
             return string(buf);
         }
 
@@ -10314,8 +10326,8 @@ class __status_bar__
 
         void init()
         {
-            create_windows__();
-            setup_thread__(_w[_TIME_DATE]);
+            create_windows_();
+            setup_thread_(_w[_TIME_DATE]);
         }
 
     __status_bar__() {}
@@ -11187,24 +11199,26 @@ class button
         const char *name;
     
     // Methods.
-        void create(const uint32_t & parent_window, const int16_t & x, const int16_t & y, const uint16_t & width, const uint16_t & height, COLOR color)
+        void create(uint32_t parent_window, int16_t x, int16_t y, uint16_t width, uint16_t height, COLOR color)
         {
             window.create_window(parent_window, x, y, width, height);
             window.set_backround_color(color);
             window.grab_button
-            ({
-                {L_MOUSE_BUTTON, NULL}
-            });
+            (
+                {
+                    {L_MOUSE_BUTTON, NULL}
+                }
+            );
 
             window.map();
         }
         
-        void action(std::function<void()> action)
+        void action(function<void()> action)
         {
             button_action = action;
         }
 
-        void add_event(std::function<void(Ev ev)> action)
+        void add_event(function<void(Ev ev)> action)
         {
             ev_a = action;
             event_id = event_handler->setEventCallback(XCB_BUTTON_PRESS, ev_a);
@@ -11227,7 +11241,7 @@ class button
 
             if (icon_path.empty())
             {
-                log_info("could not find icon for button: " + string(name));
+                loutI << "could not find icon for button: " << name << loutEND;
                 return;
             }
 
@@ -12386,20 +12400,6 @@ class __screen_settings__
 };
 static __screen_settings__ *screen_settings(nullptr);
 
-typedef struct dropdown_menu_t {
-    window         _window;
-    window         _button_window;
-    window         _dropdown_window;
-    vector<window> _options_vec;
-    vector<string> _options_str_vec;
-    string         _name;
-
-    void create(uint32_t __parent, uint32_t __x, uint32_t __y)
-    {
-        _window.create_window(__parent, __x, __y, 100, 20, RED);
-    }
-} dropdown_menu_t;
-
 /** NOTE: DEPRECATED */
 class Dock
 {
@@ -13088,6 +13088,7 @@ class mv_client
                             (cli->x + cli->width),
                             cli->y
                         );
+
                         return;
                     }
                     
@@ -13099,6 +13100,7 @@ class mv_client
                             (cli->x + cli->width),
                             (cli->y + cli->height) - c->height
                         );
+
                         return;
                     }
 
@@ -13107,6 +13109,7 @@ class mv_client
                         (cli->x + cli->width),
                         y
                     );
+
                     return;
                 }
 
@@ -13118,6 +13121,7 @@ class mv_client
                     if (y > cli->y - NC && y < cli->y + NC)
                     {  
                         c->frame.x_y((cli->x - c->width), cli->y);
+
                         return;
                     }
                     
@@ -13125,10 +13129,12 @@ class mv_client
                     if (y + c->height > cli->y + cli->height - NC && y + c->height < cli->y + cli->height + NC)
                     {
                         c->frame.x_y((cli->x - c->width), (cli->y + cli->height) - c->height);
+
                         return;
                     }
 
                     c->frame.x_y((cli->x - c->width), y);
+
                     return;
                 }
                 
@@ -13140,6 +13146,7 @@ class mv_client
                     if (x > cli->x - NC && x < cli->x + NC)
                     {  
                         c->frame.x_y(cli->x, (cli->y + cli->height));
+
                         return;
                     }
                     
@@ -13147,10 +13154,12 @@ class mv_client
                     if (x + c->width > cli->x + cli->width - NC && x + c->width < cli->x + cli->width + NC)
                     {
                         c->frame.x_y(((cli->x + cli->width) - c->width), (cli->y + cli->height));
+
                         return;
                     }
 
                     c->frame.x_y(x, (cli->y + cli->height));
+
                     return;
                 }
 
@@ -13162,6 +13171,7 @@ class mv_client
                     if (x > cli->x - NC && x < cli->x + NC)
                     {  
                         c->frame.x_y(cli->x, (cli->y - c->height));
+
                         return;
                     }
 
@@ -13169,10 +13179,12 @@ class mv_client
                     if (x + c->width > cli->x + cli->width - NC && x + c->width < cli->x + cli->width + NC)
                     {
                         c->frame.x_y(((cli->x + cli->width) - c->width), (cli->y - c->height));
+
                         return;
                     }
 
                     c->frame.x_y(x, (cli->y - c->height));
+
                     return;
                 }
             }
@@ -13208,20 +13220,27 @@ class mv_client
                             snap(new_x, new_y);
                             xcb_flush(conn);
                         }
-                        break;
+
+                        break;                     
                     }
+
                     case XCB_BUTTON_RELEASE:
                     {
                         shouldContinue = false;
                         c->update();
+
                         break;
                     }
+
                     case XCB_EXPOSE:
                     {
                         RE_CAST_EV(xcb_expose_event_t);
                         Emit(e->window, XCB_EXPOSE);
+
+                        break;
                     }
                 }
+
                 free(ev);
             }
         }
@@ -13235,6 +13254,7 @@ class mv_client
                 lastUpdateTime = currentTime;
                 return true;
             }
+
             return false;
         }
 };
@@ -13249,7 +13269,8 @@ class change_desktop
     /* Variabels   */
         int duration = 100;
 
-        enum DIRECTION {
+        enum DIRECTION
+        {
             NEXT,
             PREV
         };
@@ -13262,11 +13283,7 @@ class change_desktop
                 case NEXT:
                 {
                     if (wm->cur_d->desktop == wm->desktop_list.size()) return;
-
-                    if (wm->focused_client != nullptr)
-                    {
-                        wm->cur_d->focused_client = wm->focused_client;
-                    }
+                    if (wm->focused_client) wm->cur_d->focused_client = wm->focused_client;
 
                     hide = get_clients_on_desktop(wm->cur_d->desktop);
                     show = get_clients_on_desktop(wm->cur_d->desktop + 1);
@@ -13300,11 +13317,7 @@ class change_desktop
                 case PREV:
                 {
                     if (wm->cur_d->desktop == 1) return;
-                    
-                    if (wm->focused_client != nullptr)
-                    {
-                        wm->cur_d->focused_client = wm->focused_client;
-                    }
+                    if (wm->focused_client) wm->cur_d->focused_client = wm->focused_client;
 
                     hide = get_clients_on_desktop(wm->cur_d->desktop);
                     show = get_clients_on_desktop(wm->cur_d->desktop - 1);
@@ -13359,8 +13372,10 @@ class change_desktop
                     show = get_clients_on_desktop_with_app(wm->cur_d->desktop + 1);
                     animate(show, NEXT);
                     animate(hide, NEXT);
-                    wm->cur_d->current_clients.erase(
-                        remove(
+                    wm->cur_d->current_clients.erase
+                    (
+                        remove
+                        (
                             wm->cur_d->current_clients.begin(),
                             wm->cur_d->current_clients.end(),
                             wm->focused_client
@@ -13383,8 +13398,10 @@ class change_desktop
                     show = get_clients_on_desktop_with_app(wm->cur_d->desktop - 1);
                     animate(show, PREV);
                     animate(hide, PREV);
-                    wm->cur_d->current_clients.erase(
-                        remove(
+                    wm->cur_d->current_clients.erase
+                    (
+                        remove
+                        (
                             wm->cur_d->current_clients.begin(),
                             wm->cur_d->current_clients.end(),
                             wm->focused_client
@@ -13407,7 +13424,12 @@ class change_desktop
 
         static void teleport_to(const uint8_t & n)
         {
-            if (wm->cur_d == wm->desktop_list[n - 1] || n == 0 || n == wm->desktop_list.size()) return;
+            if (wm->cur_d == wm->desktop_list[n - 1]
+            ||  n == 0
+            ||  n == wm->desktop_list.size())
+            {
+                return;
+            }
 
             for (client *const &c:wm->cur_d->current_clients)
             {

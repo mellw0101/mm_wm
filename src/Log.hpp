@@ -1,6 +1,5 @@
 /*** dwmLog.hpp ***/
-#ifndef DWMLOG_HPP
-#define DWMLOG_HPP
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -496,11 +495,9 @@ class Logger
 	;
 };
 
-typedef struct
-{
+typedef struct {
 	string value;
-}
-event_type_obj_t;
+} event_type_obj_t;
 
 inline constexpr const char *xcb_event_type_to_str(uint8_t __event_type)
 {
@@ -545,45 +542,33 @@ inline constexpr const char *xcb_event_type_to_str(uint8_t __event_type)
 	}
 }
 
-typedef struct
-{
+typedef struct {
     string value;
-}
-FuncNameWrapper;
+} FuncNameWrapper;
 
-typedef struct
-{
+typedef struct {
 	string value;
-}
-file_name_obj_t;
+} file_name_obj_t;
 
-typedef struct
-{
+typedef struct {
 	int line;
-}
-line_obj_t;
+} line_obj_t;
 
-typedef struct
-{
+typedef struct {
     LogLevel level;
     string function;
     int line;
     string message;
     // Include a timestamp if you prefer logging it to be handled by the logger rather than each log call
-}
-LogMessage;
+} LogMessage;
 
-typedef struct
-{
+typedef struct {
     uint32_t value;
-}
-window_obj_t;
+} window_obj_t;
 
-typedef struct
-{
+typedef struct {
 	string value;
-}
-errno_msg_t;
+} errno_msg_t;
 
 class LogQueue
 {
@@ -675,6 +660,7 @@ class lout
 		lout& operator<<(const line_obj_t &__line)
 		{
 			current_line = __line.line;
+
 			return *this;
 		}
 
@@ -686,23 +672,27 @@ class lout
 		lout& operator<<(const file_name_obj_t &__name)
 		{
 			current_file = __name.value;
+
 			return *this;
 		}
 
         lout& operator<<(const window_obj_t &__window)
         {
             buffer << "[" << log_BLUE << "WINDOW_ID" << log_RESET << ":" << loutNUM(__window.value) << "] ";
+
             return *this;
         }
 
 		lout& operator<<(ostream& (*pf)(ostream&))
 		{
-			if (pf == static_cast<std::ostream& (*)(std::ostream&)>(std::endl))
+			if (pf == static_cast<ostream& (*)(ostream&)>(endl))
 			{
 				logMessage();
-				buffer = std::ostringstream(); // Reset the buffer for new messages
-				// Reset log level and function as well if desired
+
+				// Reset the buffer for new messages
+				buffer = ostringstream();
 			}
+
 			return *this;
 		}
 
@@ -933,5 +923,3 @@ inline event_type_obj_t event_type(uint8_t __event_type)
 #define log_error_code(message, err_code)   logger.log(ERROR, __FUNCTION__, message, err_code)
 #define log_win(win_name ,window)           logger.log(INFO, __func__, win_name + std::to_string(window))
 #define log_func                            logger.log(FUNC, __func__)
-
-#endif // DWMLOG_HPP
