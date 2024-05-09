@@ -6573,7 +6573,7 @@ class window
                     png_destroy_write_struct(&png_ptr, &info_ptr);
                 }
 
-                void create_png_from_vector_bitmap(const char *file_name, bool bitmap[20][20])
+                void create_png_from_vector_bitmap(const char* file_name, bool bitmap[20][20])
                 {
                     int width  = 20, height = 20;
 
@@ -6598,6 +6598,7 @@ class window
                         fclose(fp);
                         png_destroy_write_struct(&png_ptr, NULL);
                         loutE << "Failed to create PNG info struct" << loutEND;
+
                         return;
                     }
 
@@ -6606,6 +6607,7 @@ class window
                         fclose(fp);
                         png_destroy_write_struct(&png_ptr, &info_ptr);
                         loutE << "Error during PNG creation" << loutEND;
+
                         return;
                     }
 
@@ -6621,9 +6623,10 @@ class window
                         {
                             row[x] = bitmap[y][x] ? 0xFF : 0x00;
                         }
-                        png_write_row(png_ptr, row);
 
+                        png_write_row(png_ptr, row);
                     }
+
                     delete[] row;
 
                     png_write_end(png_ptr, NULL);
@@ -6667,10 +6670,7 @@ class window
                     __height
                 );
 
-                uint32_t values[1] = {Color->get(__color)};
-                xcb_configure_window(conn, _window, XCB_CW_BACK_PIXEL, values);
-
-                // XCB::change_back_pixel(window, Color->get(__color));
+                XCB::change_back_pixel(window, Color->get(__color));
                 xcb_map_window(conn, window);
                 xcb_flush(conn);
 
