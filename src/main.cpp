@@ -9169,24 +9169,6 @@ class Window_Manager
                 focused_client = c;
                 cur_d->focused_client = c;
             }
-
-            client* make_internal_client(window &window)
-            {
-                client *c = new client;
-
-                c->win    = window;
-                c->x      = window.x();
-                c->y      = window.y();
-                c->width  = window.width();
-                c->height = window.height();
-
-                c->make_decorations();
-                client_list.push_back(c);
-                cur_d->current_clients.push_back(c);
-                c->focus();
-
-                return c;
-            }
             
             void send_sigterm_to_client(client* c)
             {
@@ -9267,46 +9249,6 @@ class Window_Manager
                 cur_d      = d;
 
                 desktop_list.push_back(d);
-            }
-
-        /* Experimental */
-            xcb_visualtype_t *find_argb_visual(xcb_connection_t *conn, xcb_screen_t *screen)
-            {
-                xcb_depth_iterator_t depth_iter = xcb_screen_allowed_depths_iterator(screen);
-                for (; depth_iter.rem; xcb_depth_next(&depth_iter))
-                {
-                    xcb_visualtype_iterator_t visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
-                    for (; visual_iter.rem; xcb_visualtype_next(&visual_iter))
-                    {
-                        if (depth_iter.data->depth == 32)
-                        {
-                            return visual_iter.data;
-                        }
-                    }
-                }
-                return nullptr;
-            }
-
-            void synchronize_xcb()
-            {
-                free(xcb_get_input_focus_reply(conn, xcb_get_input_focus(conn), NULL));
-            }
-
-        /* Xcb          */
-            void send_expose_event(window &__window)
-            {
-                xcb_expose_event_t expose_event = {
-                    .response_type = XCB_EXPOSE,
-                    .window = __window,
-                    .x      = 0,                                        /* < Top-left x coordinate of the area to be redrawn                 */
-                    .y      = 0,                                        /* < Top-left y coordinate of the area to be redrawn                 */
-                    .width  = static_cast<uint16_t>(__window.width()),  /* < Width of the area to be redrawn                                 */
-                    .height = static_cast<uint16_t>(__window.height()), /* < Height of the area to be redrawn                                */
-                    .count  = 0                                         /* < Number of expose events to follow if this is part of a sequence */
-                };
-
-                xcb_send_event(conn, false, __window, XCB_EVENT_MASK_EXPOSURE, (char *)&expose_event);
-                xcb_flush(conn);
             }
 
     private:
@@ -11597,7 +11539,7 @@ class search_window
 
 };
 
-class add_app_dialog_window
+/* class add_app_dialog_window
 {
     public:
     // Variables.
@@ -11681,7 +11623,7 @@ class add_app_dialog_window
 
     // Variabels.
         function<void()> enter_function;
-};
+}; */
 
 class __file_app__
 {
@@ -12359,7 +12301,7 @@ class __screen_settings__
 static __screen_settings__ *screen_settings(nullptr);
 
 /** NOTE: DEPRECATED */
-class Dock
+/* class Dock
 {
     public:
     // Constructor.
@@ -12488,7 +12430,7 @@ class Dock
                 }
             }); 
         }
-};
+}; */
 
 class __dock_search__
 {
@@ -12861,11 +12803,8 @@ class __dock__
 };
 static __dock__ *dock(nullptr);
 
-/**
-*****************************************
-*****************************************
+/****************************************
 **** @class @c DropDownTerm
-*****************************************
 ****************************************/
 class DropDownTerm
 {
