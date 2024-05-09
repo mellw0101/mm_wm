@@ -90,9 +90,9 @@ Logger logger;
 #include "tools.hpp"
 #include "prof.hpp"
 #include "color.hpp"
-#include "pty.h"
 
 /*
+#include "pty.h"
 #include "thread.hpp"
 #include <queue>
 #include <numeric>
@@ -13588,17 +13588,20 @@ class resize_client
          * AND NOW WITH THE 'retard_int' I CAN CALL IT LIKE THIS 'resize_client(c, 0)'
          * 
          */
-        resize_client(client * & c , int retard_int) : c(c) {
+        resize_client(client * & c, int retard_int)
+        : c(c)
+        {
             if (c->win.is_EWMH_fullscreen()) return;
+        
             pointer.grab();
             pointer.teleport(c->x + c->width, c->y + c->height);
             run();
             pointer.ungrab();
-
         }
 
     /* Subclasses  */
-        class no_border {
+        class no_border
+        {
             public:
             /* Constructor */
                 no_border(client * & c, const uint32_t & x, const uint32_t & y)
@@ -13624,7 +13627,8 @@ class resize_client
                 const double frameDuration = 1000.0 / frameRate;
             
             /* Methods     */
-                constexpr void teleport_mouse(edge edge) {
+                constexpr void teleport_mouse(edge edge)
+                {
                     switch (edge)
                     {
                         case edge::TOP:
@@ -13682,7 +13686,8 @@ class resize_client
                     }
                 }
 
-                void resize_client(const uint32_t x, const uint32_t y, edge edge) {
+                void resize_client(const uint32_t x, const uint32_t y, edge edge)
+                {
                     switch(edge)
                     {
                         case edge::LEFT:
@@ -13739,7 +13744,8 @@ class resize_client
                     }
                 }
 
-                void run(edge edge) {
+                void run(edge edge)
+                {
                     xcb_generic_event_t *ev;
                     bool shouldContinue = true;
                     while (shouldContinue)
@@ -13765,6 +13771,7 @@ class resize_client
                             {
                                 shouldContinue = false;                        
                                 c->update();
+                
                                 break;
                             }
                         }
@@ -13773,11 +13780,13 @@ class resize_client
                     }
                 }
 
-                bool isTimeToRender() {
+                bool isTimeToRender()
+                {
                     const auto &currentTime = chrono::high_resolution_clock::now();
                     const chrono::duration<double, milli> &elapsedTime = currentTime - lastUpdateTime;
 
-                    if (elapsedTime.count() >= frameDuration) {
+                    if (elapsedTime.count() >= frameDuration)
+                    {
                         lastUpdateTime = currentTime;
                         return true;
                     }
@@ -13790,10 +13799,10 @@ class resize_client
         {
             public:
             /* Constructor */
-                border(client *&c, edge _edge) : c(c)
+                border(client *&c, edge _edge)
+                : c(c)
                 {
-                    if (c == nullptr) return;
-                    if (c->win.is_EWMH_fullscreen()) return;
+                    if (!c || c->win.is_EWMH_fullscreen()) return;
 
                     map<client *, edge> map = wm->get_client_next_to_client(c, _edge);
                     for (const auto &pair : map)
@@ -13810,6 +13819,7 @@ class resize_client
                             return; 
                         }
                     }
+
                     pointer.grab();
                     teleport_mouse(_edge);
                     run(_edge);
