@@ -70,9 +70,10 @@ namespace XCB
             __data
         );
         xcb_generic_error_t *error = xcb_request_check(conn, cookie);
-        if (error != nullptr)
+        if (error)
         {
             loutE << WINDOW_ID_BY_INPUT(__window) << "error_code" << error->error_code << loutEND;
+            free(error);
         }
     }
 
@@ -172,9 +173,10 @@ namespace XCB
         return font_id;
     }
 
-    void change_back_pixel(uint32_t __window, uint32_t __pixel)
+    void change_back_pixel(uint32_t __window, uint32_t pixel)
     {
-        XCB::change_window_attributes(__window, XCB_CW_BACK_PIXEL, (const uint32_t[]){ __pixel });
+        uint32_t values[1] = {pixel};
+        XCB::change_window_attributes(__window, XCB_CW_BACK_PIXEL, values);
     }
 
     void apply_ev_mask(uint32_t __window, const uint32_t *__mask)

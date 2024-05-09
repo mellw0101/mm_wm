@@ -6666,9 +6666,13 @@ class window
                     __width,
                     __height
                 );
-                XCB::change_back_pixel(window, Color->get(__color));
-                XCB::map_window(window);
-                XCB::flush();
+
+                uint32_t values[1] = {Color->get(__color)};
+                xcb_configure_window(conn, _window, XCB_CW_BACK_PIXEL, values);
+
+                // XCB::change_back_pixel(window, Color->get(__color));
+                xcb_map_window(conn, window);
+                xcb_flush(conn);
 
                 if (__border == UP   ) _border[0] = window;
                 if (__border == DOWN ) _border[1] = window;
@@ -6707,13 +6711,14 @@ class window
 
         /* Font       */
             /**
-             * @brief Calculates the total number of Unicode characters in a UTF-8 string.
-             *        This function helps in determining the exact number of xcb_char2b_t
-             *        structures required to represent the string.
-             *
-             * @param input Pointer to the UTF-8 encoded string.
-             * @return The total number of Unicode characters in the input string.
-             */
+                @brief Calculates the total number of Unicode characters in a UTF-8 string.
+                    This function helps in determining the exact number of xcb_char2b_t
+                    structures required to represent the string.
+ 
+                @param input Pointer to the UTF-8 encoded string.
+                @return The total number of Unicode characters in the input string.
+             
+                */
             size_t calculate_utf8_size(const char *input)
             {
                 size_t count = 0;
@@ -6721,29 +6726,35 @@ class window
                 {
                     const unsigned char *str = (const unsigned char *)input;
                     
-                    if (str[0] <= 0x7F) // 1-byte character
+                    // 1-byte character
+                    if (str[0] <= 0x7F)
                     {
                         input += 1;
                     }
-                    else if ((str[0] & 0xE0) == 0xC0) // 2-byte character
+                    // 2-byte character
+                    else if ((str[0] & 0xE0) == 0xC0)
                     {
                         input += 2;
                     }
-                    else if ((str[0] & 0xF0) == 0xE0) // 3-byte character
+                    // 3-byte character
+                    else if ((str[0] & 0xF0) == 0xE0)
                     {
                         input += 3;
                     }
-                    else if ((str[0] & 0xF8) == 0xF0) // 4-byte character
+                    // 4-byte character
+                    else if ((str[0] & 0xF8) == 0xF0)
                     {
                         input += 4;
                     }
-                    else // Invalid UTF-8, assume 1-byte to move past the invalid byte
+                    // Invalid UTF-8, assume 1-byte to move past the invalid byte
+                    else
                     {
                         input += 1;
                     }
                     
                     count++;
                 }
+
                 return count;
             }
 
@@ -6763,51 +6774,66 @@ class window
                 while (*input != '\0' && count < max_chars)
                 {
                     uint32_t codepoint = decode_utf8_char(&input);
+                
                     // Convert Unicode codepoint to xcb_char2b_t
                     char2b[count].byte1 = (codepoint >> 8) & 0xFF;
                     char2b[count].byte2 = codepoint & 0xFF;
                     count++;
                 }
-                *len = count; // Actual number of characters converted
+
+                // Actual number of characters converted
+                *len = count;
+                
                 return char2b;
             }
 
             /**
-             * @brief Decodes a single UTF-8 encoded character from the input string
-             *        and returns the Unicode code point.
-             *        Also advances the input string by the number of bytes used for
-             *        the decoded character. 
-             */
+              
+                @brief Decodes a single UTF-8 encoded character from the input string
+                    and returns the Unicode code point.
+                    Also advances the input string by the number of bytes used for
+                    the decoded character.
+
+                */
             uint32_t decode_utf8_char(const char **input)
             {
                 const unsigned char *str = (const unsigned char *)*input;
                 uint32_t codepoint = 0;
                 
-                if (str[0] <= 0x7F)/* 1-byte character */
+                /* 1-byte character */
+                if (str[0] <= 0x7F)
                 {    
                     codepoint = str[0];
                     *input += 1;
                 }
-                else if ((str[0] & 0xE0) == 0xC0)/* 2-byte character */
+                /* 2-byte character */
+                else if ((str[0] & 0xE0) == 0xC0)
                 {
                     codepoint = ((str[0] & 0x1F) << 6) | (str[1] & 0x3F);
                     *input += 2;
                 }
-                else if ((str[0] & 0xF0) == 0xE0)/* 3-byte character */
+                /* 3-byte character */
+                else if ((str[0] & 0xF0) == 0xE0)
                 {
                     codepoint = ((str[0] & 0x0F) << 12) | ((str[1] & 0x3F) << 6) | (str[2] & 0x3F);
                     *input += 3;
                 }
-                else if ((str[0] & 0xF8) == 0xF0)/* 4-byte character (will not be fully represented in UCS-2) */
+                /* 4-byte character (will not be fully represented in UCS-2) */
+                else if ((str[0] & 0xF8) == 0xF0)
                 {    
-                    codepoint = 0xFFFD; // Replacement character, as UCS-2 cannot represent this
+                    // Replacement character, as UCS-2 cannot represent this
+                    codepoint = 0xFFFD;
                     *input += 4;
                 }
-                else/* Invalid UTF-8, return replacement character */
+                /* Invalid UTF-8, return replacement character */
+                else
                 {
                     codepoint = 0xFFFD;
-                    *input += 1; // Advance past the invalid byte
+                    
+                    // Advance past the invalid byte
+                    *input += 1;
                 }
+
                 return codepoint;
             }
             
@@ -6815,19 +6841,25 @@ class window
             xcb_char2b_t *convert_to_char2b(const char *input, int *len)
             {
                 size_t utf8_len = slen(input);
-                size_t max_chars = utf8_len; // Maximum possible number of characters (all 1-byte)
+                
+                // Maximum possible number of characters (all 1-byte)
+                size_t max_chars = utf8_len;
 
                 xcb_char2b_t *char2b = (xcb_char2b_t *)malloc(max_chars * sizeof(xcb_char2b_t));
                 int count = 0;
                 while (*input != '\0' && count < max_chars)
                 {
                     uint32_t codepoint = decode_utf8_char(&input);
+                
                     // Convert Unicode codepoint to xcb_char2b_t
                     char2b[count].byte1 = (codepoint >> 8) & 0xFF;
                     char2b[count].byte2 = codepoint & 0xFF;
                     count++;
                 }
-                *len = count; // Actual number of characters converted
+
+                // Actual number of characters converted
+                *len = count;
+                
                 return char2b;
             }
 };
@@ -8469,11 +8501,8 @@ class Key_Codes
         xcb_key_symbols_t *keysyms;
 };
 
-/**
-*****************************************
-*****************************************
+/****************************************
 **** CLASS: @c Entry
-*****************************************
 ****************************************/
 class Entry
 {
@@ -8532,11 +8561,8 @@ class Entry
         }
 };
 
-/**
-*****************************************
-*****************************************
+/****************************************
 **** @class @c context_menu
-*****************************************
 ****************************************/
 class context_menu
 {
@@ -8651,11 +8677,8 @@ class context_menu
     }
 };
 
-/**
-*****************************************
-*****************************************
+/****************************************
 **** @class @c Window_Manager
-*****************************************
 ****************************************/
 class Window_Manager
 {
@@ -9333,30 +9356,6 @@ class Window_Manager
                 root.set_pointer(CURSOR::arrow);
             }
 
-        /* Check  */
-            int cookie_error__(xcb_void_cookie_t cookie , const char *sender_function)
-            {
-                xcb_generic_error_t *err = xcb_request_check(conn, cookie);
-                uint8_t err_code = 0;
-                if (err)
-                {
-                    err_code = err->error_code;
-                    free(err);
-                }
-
-                return err_code;
-            }
-            
-            void check_error__(xcb_void_cookie_t cookie , const char *sender_function, const char *err_msg)
-            {
-                xcb_generic_error_t *err = xcb_request_check(conn, cookie);
-                if (err)
-                {
-                    loutE << ERRNO_MSG(err_msg) << " error_code:" << err->error_code << loutEND;
-                    free(err);
-                }
-            }
-
         /* Delete */
             void delete_client_vec__(vector<client *> &vec)
             {
@@ -9380,39 +9379,6 @@ class Window_Manager
 
                 vec.clear();
                 vector<desktop *>().swap(vec);
-            }
-            
-            template <typename Type>
-            static void delete_ptr_vector__(vector<Type *>& vec)
-            {
-                for (Type *ptr : vec)
-                {
-                    delete ptr;
-                }
-
-                vec.clear(); vector<Type *>().swap(vec);
-            }
-            
-            void remove_client_from_vector__(client* c, vector<client *>& vec)
-            {
-                if (!c)
-                {
-                    loutE << "client is nullptr." << loutEND;
-                    return;
-                }
-
-                vec.erase
-                (
-                    remove
-                    (
-                        vec.begin(),
-                        vec.end(),
-                        c
-                    ),
-                    vec.end()
-                );
-
-                delete c;
             }
 
         /* Client */
@@ -9523,25 +9489,6 @@ class Window_Manager
                     c->_height(screen->height_in_pixels - c->y);
                     xcb_flush(conn);
                 }
-            }
-
-        /* Window */
-            void get_window_parameters__(uint32_t window, int16_t* x, int16_t* y, uint16_t* width,  uint16_t* height)
-            {
-                xcb_get_geometry_cookie_t cookie = xcb_get_geometry(conn, window);
-                xcb_get_geometry_reply_t *reply = xcb_get_geometry_reply(conn, cookie, nullptr);
-                if (!reply)
-                {
-                    loutE << "Unable to get window geometry" << loutEND;
-                    return;
-                }
-                
-                *x      = reply->x;
-                *y      = reply->y;
-                *width  = reply->width;
-                *height = reply->height;
-
-                free(reply);
             }
 
         /* Events */
