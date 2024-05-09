@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.cpp": "cpp",
+			"cstdint": "cpp",
+			"ios": "cpp",
+			"iomanip": "cpp"
+		},
+		// "editor.defaultFoldingRangeProvider": "NathanJ.cpp-tools-plugin",
+		// "editor.defaultFormatter": "NathanJ.cpp-tools-plugin"
+	}
+}
