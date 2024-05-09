@@ -8689,12 +8689,8 @@ class Window_Manager
         /* Main         */
             void init()
             {
-                AutoTimer timer("Class Window_Manager: " + string(__func__));
+                intern_init();
 
-                conn__(nullptr, nullptr);
-                setup__();
-                iter__();
-                screen__();
                 xcb = connect_to_server(screen);
                 if ((xcb->check_conn() & (1ULL << X_CONN_ERROR)) != 0)
                 {
@@ -8743,9 +8739,9 @@ class Window_Manager
                 root.height( screen->height_in_pixels );
                 
 
-                setSubstructureRedirectMask__();
-                configure_root__();
-                ewmh__();
+                setSubstructureRedirectMask_();
+                configure_root_();
+                ewmh_();
                 
                 key_codes.init();
                 event_handler = new __event_handler__();
@@ -8807,26 +8803,37 @@ class Window_Manager
             }
 
         /* Window       */
-            uint32_t window_exists(uint32_t __w)
+            uint32_t window_exists(uint32_t window)
             {
-                xcb_get_property_cookie_t cookie = xcb_get_property_unchecked(conn, 0, __w, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 0, 0);
+                xcb_get_property_cookie_t cookie = xcb_get_property_unchecked
+                (
+                    conn,
+                    0,
+                    window,
+                    XCB_ATOM_WM_NAME,
+                    XCB_ATOM_STRING,
+                    0,
+                    0
+                );
                 xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
-                if (reply == nullptr)
+                if (!reply)
                 {
                     return UINT32_MAX;
                 }
+
                 free(reply);
-                return __w;
+                return window;
             }
             
-            void window_stack(uint32_t __window1, uint32_t __window2, uint32_t __mode)
+            void window_stack(uint32_t window1, uint32_t window2, uint32_t mode)
             {
-                if (__window2 == 0L) return;
+                if (window2 == 0L) return;
                 
                 uint16_t mask = XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE;
-                uint32_t values[] = {__window2, __mode};
+                uint32_t values[] = {window2, mode};
                 
-                xcb_configure_window(conn, __window1, mask, values);    
+                xcb_configure_window(conn, window1, mask, values);    
+                xcb_flush(conn);
             }
             
             // stack '__window1' above '__window2'
@@ -8913,7 +8920,7 @@ class Window_Manager
                 }
 
             /* Fetch */
-                client *client_from_window(const xcb_window_t *window)
+                client* client_from_window(const xcb_window_t* window)
                 {
                     AutoTimer t(__func__);
 
@@ -8924,10 +8931,11 @@ class Window_Manager
                             return c;
                         }
                     }
+
                     return nullptr;
                 }
                 
-                client *client_from_any_window(const xcb_window_t *window)
+                client* client_from_any_window(const xcb_window_t* window)
                 {
                     AutoTimer t(__func__);
 
@@ -8954,7 +8962,7 @@ class Window_Manager
                     return nullptr;
                 }
                 
-                client *client_from_pointer(const int &prox)
+                client* client_from_pointer(int prox)
                 {
                     const uint32_t &x = pointer.x();
                     const uint32_t &y = pointer.y();
@@ -8971,15 +8979,15 @@ class Window_Manager
                         
                         // BOTTOM EDGE OF CLIENT
                         if (y >= c->y + c->height && y < c->y + c->height + prox) return c;
-
                     }
+
                     return nullptr;
                 }
 
-                map<client *, edge> get_client_next_to_client(client *c, edge c_edge)
+                map<client*, edge> get_client_next_to_client(client* c, edge c_edge)
                 {
-                    map<client *, edge> map;
-                    for (client *c2:cur_d->current_clients)
+                    map<client*, edge> map;
+                    for (client* c2 : cur_d->current_clients)
                     {
                         if (c == c2) continue;
 
@@ -9019,19 +9027,20 @@ class Window_Manager
                             }
                         }
                     }
+
                     map[nullptr] = edge::NONE;
                     return map;
                 }
 
-                edge get_client_edge_from_pointer(client *c, const int &prox)
+                edge get_client_edge_from_pointer(client* c, int prox)
                 {
-                    const uint32_t &x = pointer.x();
-                    const uint32_t &y = pointer.y();
+                    const uint32_t x = pointer.x();
+                    const uint32_t y = pointer.y();
 
-                    const uint32_t &top_border    = c->y;
-                    const uint32_t &bottom_border = (c->y + c->height);
-                    const uint32_t &left_border   = c->x;
-                    const uint32_t &right_border  = (c->x + c->width);
+                    const uint32_t top_border    = c->y;
+                    const uint32_t bottom_border = (c->y + c->height);
+                    const uint32_t left_border   = c->x;
+                    const uint32_t right_border  = (c->x + c->width);
  
                     /* TOP EDGE OF CLIENT */
                     if (((y > top_border - prox) && (y <= top_border))
@@ -9040,53 +9049,60 @@ class Window_Manager
                         return edge::TOP;
                     }
 
+                    /* BOTTOM EDGE OF CLIENT */
                     if (((y >= bottom_border) && (y < bottom_border + prox))
-                    && ((x > left_border + prox) && (x < right_border - prox))) {
+                    && ((x > left_border + prox) && (x < right_border - prox)))
+                    {
                         return edge::BOTTOM_edge;
-
-                    } /* BOTTOM EDGE OF CLIENT */
+                    }
                     
+                    /* LEFT EDGE OF CLIENT */
                     if (((x > left_border) - prox && (x <= left_border))
-                    && ((y > top_border + prox) && (y < bottom_border - prox))) {
+                    && ((y > top_border + prox) && (y < bottom_border - prox)))
+                    {
                         return edge::LEFT;
-
-                    } /* LEFT EDGE OF CLIENT */
+                    }
                     
+                    /* RIGHT EDGE OF CLIENT */
                     if (((x >= right_border) && (x < right_border + prox))
-                    && ((y > top_border + prox) && (y < bottom_border - prox))) {
+                    && ((y > top_border + prox) && (y < bottom_border - prox)))
+                    {
                         return edge::RIGHT;
-
-                    } /* RIGHT EDGE OF CLIENT */
+                    }
  
+                    /* TOP LEFT CORNER OF CLIENT */
                     if (((x > left_border - prox) && x < left_border + prox)
-                    && ((y > top_border - prox) && y < top_border + prox)) {
+                    && ((y > top_border - prox) && y < top_border + prox))
+                    {
                         return edge::TOP_LEFT;
+                    }
 
-                    } /* TOP LEFT CORNER OF CLIENT */
-
+                    /* TOP RIGHT CORNER OF CLIENT */
                     if (((x > right_border - prox) && x < right_border + prox)
-                    && ((y > top_border - prox) && y < top_border + prox)) {
+                    && ((y > top_border - prox) && y < top_border + prox))
+                    {
                         return edge::TOP_RIGHT;
+                    }
 
-                    } /* TOP RIGHT CORNER OF CLIENT */
-
+                    /* BOTTOM LEFT CORNER OF CLIENT */
                     if (((x > left_border - prox) && x < left_border + prox) 
-                    && ((y > bottom_border - prox) && y < bottom_border + prox)) {
+                    && ((y > bottom_border - prox) && y < bottom_border + prox))
+                    {
                         return edge::BOTTOM_LEFT;
+                    }
 
-                    } /* BOTTOM LEFT CORNER OF CLIENT */
-
+                    /* BOTTOM RIGHT CORNER OF CLIENT */
                     if (((x > right_border - prox) && x < right_border + prox)
-                    && ((y > bottom_border - prox) && y < bottom_border + prox)) {
+                    && ((y > bottom_border - prox) && y < bottom_border + prox))
+                    {
                         return edge::BOTTOM_RIGHT;
+                    }
 
-                    } /* BOTTOM RIGHT CORNER OF CLIENT */
-
+                    /* As default return 'edge::NONE' */
                     return edge::NONE;
-
                 }
                 
-                client *get_client_from_pointer()
+                client* get_client_from_pointer()
                 {
                     const int16_t x = pointer.x();
                     const int16_t y = pointer.y();
@@ -9099,15 +9115,16 @@ class Window_Manager
                             return c;
                         }
                     }
+
                     return nullptr;
                 }
 
-            void manage_new_client(uint32_t __window)
+            void manage_new_client(uint32_t window)
             {
                 AutoTimer timer(__func__);
 
-                client *c = make_client__(__window);
-                if (c == nullptr)
+                client *c = make_client__(window);
+                if (!c)
                 {
                     loutE << "could not make client" << loutEND;
                     return;
@@ -9129,11 +9146,13 @@ class Window_Manager
 
                 c->win.map();
                 c->win.grab_button
-                ({
-                    {L_MOUSE_BUTTON, ALT},
-                    {R_MOUSE_BUTTON, ALT},
-                    {L_MOUSE_BUTTON, NULL}
-                });
+                (
+                    {
+                        {L_MOUSE_BUTTON, ALT},
+                        {R_MOUSE_BUTTON, ALT},
+                        {L_MOUSE_BUTTON, NULL}
+                    }
+                );
 
                 if (!c->win.check_frameless_window_hint())
                 {
@@ -9142,6 +9161,7 @@ class Window_Manager
                     c->win.set_event_mask(CLIENT_EVENT_MASK);
                     c->frame.grab_default_keys();
                 }
+
                 c->win.grab_default_keys();
                 xcb_flush(conn);
                 c->update();
@@ -9150,7 +9170,7 @@ class Window_Manager
                 cur_d->focused_client = c;
             }
 
-            client *make_internal_client(window &window)
+            client* make_internal_client(window &window)
             {
                 client *c = new client;
 
@@ -9168,16 +9188,16 @@ class Window_Manager
                 return c;
             }
             
-            void send_sigterm_to_client(client *c)
+            void send_sigterm_to_client(client* c)
             {
                 c->kill();
                 remove_client(c);
             }
 
-            void remove_client(client *c)
+            void remove_client(client* c)
             {
                 AutoTimer timer(__func__);
-                if (c == nullptr)
+                if (!c)
                 {
                     loutE << "null client" << '\n';
                     return;
@@ -9230,18 +9250,18 @@ class Window_Manager
             }
 
         /* Desktop      */
-            void create_new_desktop(uint16_t __n)
+            void create_new_desktop(uint16_t n)
             {
                 AutoTimer timer(__func__);
 
                 for (int i = 0; i < desktop_list.size(); ++i)
                 {
-                    if (desktop_list[i]->desktop == __n) return;
+                    if (desktop_list[i]->desktop == n) return;
                 }
 
                 desktop *d = new desktop;
                 
-                d->desktop = __n;
+                d->desktop = n;
                 d->width   = screen->width_in_pixels;
                 d->height  = screen->height_in_pixels;
                 cur_d      = d;
@@ -9292,46 +9312,39 @@ class Window_Manager
     private:
     /* Functions   */
         /* Init   */
-            void conn__(const char *displayname, int *screenp)
+            void intern_init()
             {
-                conn = xcb_connect( displayname, screenp );
-                check_conn__();
-            }
-            
-            void ewmh__()
-            {
-                if ( !( ewmh = static_cast<xcb_ewmh_connection_t *>( calloc( 1, sizeof( xcb_ewmh_connection_t )))))
+                conn = xcb_connect(nullptr, nullptr);
+                if (xcb_connection_has_error(conn))
                 {
-                    loutE << "ewmh faild to initialize" << loutEND;
-                    quit( 1 );
-                }                    
-                
-                xcb_intern_atom_cookie_t * cookie = xcb_ewmh_init_atoms( conn, ewmh );
-                if ( !( xcb_ewmh_init_atoms_replies( ewmh, cookie, 0 )))
-                {
-                    loutE << "xcb_ewmh_init_atoms_replies:faild" << loutEND;
-                    quit( 1 );
+                    loutE << "Cannot connect to x server" << loutEND;
                 }
-            }
-            
-            void setup__()
-            {
-                setup = xcb_get_setup(conn);
-            }
 
-            void iter__()
-            {
+                setup = xcb_get_setup(conn);
                 iter = xcb_setup_roots_iterator(setup);
-            }
-            
-            void screen__()
-            {
                 screen = iter.data;
             }
             
-            bool setSubstructureRedirectMask__()
+            void ewmh_()
             {
-                xcb_void_cookie_t cookie = xcb_change_window_attributes_checked(
+                if (!(ewmh = static_cast<xcb_ewmh_connection_t*>(calloc(1, sizeof(xcb_ewmh_connection_t)))))
+                {
+                    loutE << "ewmh faild to initialize" << loutEND;
+                    quit(1);
+                }                    
+                
+                xcb_intern_atom_cookie_t * cookie = xcb_ewmh_init_atoms(conn, ewmh);
+                if (!(xcb_ewmh_init_atoms_replies(ewmh, cookie, 0)))
+                {
+                    loutE << "xcb_ewmh_init_atoms_replies:faild" << loutEND;
+                    quit(1);
+                }
+            }
+            
+            bool setSubstructureRedirectMask_()
+            {
+                xcb_void_cookie_t cookie = xcb_change_window_attributes_checked
+                (
                     conn,
                     root,
                     XCB_CW_EVENT_MASK,
@@ -9341,27 +9354,33 @@ class Window_Manager
                     }
                 );
                 xcb_generic_error_t *error = xcb_request_check( conn, cookie );
-                if ( !error ) return true;
+                
+                if (!error)
+                {
+                    return true;
+                }
                 
                 loutE << "Error: Another window manager is already running or failed to set SubstructureRedirect mask" << loutEND;
-                free( error );
+                free(error);
+
                 return false;
             }
             
-            void configure_root__()
+            void configure_root_()
             {
-                root.set_backround_color( DARK_GREY );
-                root.set_event_mask( ROOT_EVENT_MASK );
+                root.set_backround_color(DARK_GREY);
+                root.set_event_mask(ROOT_EVENT_MASK);
                 root.grab_keys(
-                {
-                    { Q,       SHIFT  | ALT   },
-                    { T,       CTRL   | ALT   },
-                    { TAB,     ALT            },
-                    { L_ARROW, CTRL   | SUPER },
-                    { R_ARROW, CTRL   | SUPER },
-                    { F12,     NULL           },
-                    { SUPER_L, SHIFT          }
-                });
+                    {
+                        {Q,       SHIFT  | ALT  },
+                        {T,       CTRL   | ALT  },
+                        {TAB,     ALT           },
+                        {L_ARROW, CTRL   | SUPER},
+                        {R_ARROW, CTRL   | SUPER},
+                        {F12,     NULL          },
+                        {SUPER_L, SHIFT         }
+                    }
+                );
                 root.clear();
 
                 #ifndef ARMV8_BUILD
@@ -9373,67 +9392,6 @@ class Window_Manager
             }
 
         /* Check  */
-            void check_error__(const int &code)
-            {
-                switch (code)
-                {
-                    case CONN_ERR:
-                    {
-                        loutE << "Connection error" << loutEND;
-                        quit(CONN_ERR);
-                        break;
-                    }
-
-                    case EXTENTION_NOT_SUPPORTED_ERR:
-                    {
-                        loutE << "Extension not supported" << loutEND;
-                        quit(EXTENTION_NOT_SUPPORTED_ERR);
-                        break;
-                    }
-               
-                    case MEMORY_INSUFFICIENT_ERR:
-                    {
-                        loutE << "Insufficient memory" << loutEND;
-                        quit(MEMORY_INSUFFICIENT_ERR);
-                        break;
-                    }
-      
-                    case REQUEST_TO_LONG_ERR:
-                    {
-                        loutE << "Request to long" << loutEND;
-                        quit(REQUEST_TO_LONG_ERR);
-                        break;
-                    }
-
-                    case PARSE_ERR:
-                    {
-                        loutE << "Parse error" << loutEND;
-                        quit(PARSE_ERR);
-                        break;
-                    }
-
-                    case SCREEN_NOT_FOUND_ERR:
-                    {
-                        loutE << "Screen not found" << loutEND;
-                        quit(SCREEN_NOT_FOUND_ERR);
-                        break;
-                    }
-
-                    case FD_ERR:
-                    {
-                        loutE << "File descriptor error." << loutEND;
-                        quit(FD_ERR);
-                        break;
-                    }
-                }
-            }
-            
-            void check_conn__()
-            {
-                int status = xcb_connection_has_error(conn);
-                check_error__(status);
-            }
-            
             int cookie_error__(xcb_void_cookie_t cookie , const char *sender_function)
             {
                 xcb_generic_error_t *err = xcb_request_check(conn, cookie);
@@ -9443,6 +9401,7 @@ class Window_Manager
                     err_code = err->error_code;
                     free(err);
                 }
+
                 return err_code;
             }
             
@@ -9488,18 +9447,22 @@ class Window_Manager
                 {
                     delete ptr;
                 }
+
                 vec.clear(); vector<Type *>().swap(vec);
             }
             
-            void remove_client_from_vector__(client * c, vector<client *> &vec)
+            void remove_client_from_vector__(client* c, vector<client *>& vec)
             {
-                if (c == nullptr)
+                if (!c)
                 {
                     loutE << "client is nullptr." << loutEND;
                     return;
                 }
-                vec.erase(
-                    std::remove(
+
+                vec.erase
+                (
+                    remove
+                    (
                         vec.begin(),
                         vec.end(),
                         c
@@ -9514,7 +9477,7 @@ class Window_Manager
             client *make_client__(uint32_t window)
             {
                 client *c = new client;
-                if (c == nullptr)
+                if (!c)
                 {
                     loutE << "Could not allocate memory for client" << '\n';
                     return nullptr;
@@ -9558,14 +9521,8 @@ class Window_Manager
                 return c;
             }
 
-            void check_client__(client *c)
+            void check_client__(client* c)
             {
-                /* c->win.x(BORDER_SIZE);
-                FLUSH_X();
-
-                c->win.y(TITLE_BAR_HEIGHT + BORDER_SIZE);
-                FLUSH_X(); */
-
                 // if client if full_screen but 'y' is offset for some reason, make 'y' (0)
                 if (c->x == 0
                 &&  c->y != 0
@@ -9573,7 +9530,8 @@ class Window_Manager
                 &&  c->height == screen->height_in_pixels)
                 {
                     c->_y(0);
-                    FLUSH_X();
+                    xcb_flush(conn);
+
                     return;
                 }
                 
@@ -9621,25 +9579,25 @@ class Window_Manager
                 if ((c->y + c->height) > screen->height_in_pixels)
                 {
                     c->_height(screen->height_in_pixels - c->y);
-                    FLUSH_X();
+                    xcb_flush(conn);
                 }
             }
 
         /* Window */
-            void get_window_parameters__(const uint32_t &__window, int16_t *__x, int16_t *__y, uint16_t *__width,  uint16_t *__height)
+            void get_window_parameters__(uint32_t window, int16_t* x, int16_t* y, uint16_t* width,  uint16_t* height)
             {
-                xcb_get_geometry_cookie_t cookie = xcb_get_geometry(conn, __window);
+                xcb_get_geometry_cookie_t cookie = xcb_get_geometry(conn, window);
                 xcb_get_geometry_reply_t *reply = xcb_get_geometry_reply(conn, cookie, nullptr);
-                if (reply == nullptr)
+                if (!reply)
                 {
-                    loutE << "Unable to get window geometry." << loutEND;
+                    loutE << "Unable to get window geometry" << loutEND;
                     return;
                 }
                 
-                *__x      = reply->x;
-                *__y      = reply->y;
-                *__width  = reply->width;
-                *__height = reply->height;
+                *x      = reply->x;
+                *y      = reply->y;
+                *width  = reply->width;
+                *height = reply->height;
 
                 free(reply);
             }
@@ -9656,7 +9614,7 @@ class Window_Manager
                 ConnSig(screen->root, XCB_DESTROY_NOTIFY,
                     loutI << "Destroy notify" << loutEND;
                     client *c = client_from_window(&w);
-                    if ( c == nullptr ) return;
+                    if (!c) return;
                     c->kill();
                     remove_client(c);
                 );

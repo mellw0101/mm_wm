@@ -2,6 +2,7 @@
 #define EVENT__HPP
 
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <utility>
 #include <xcb/xcb.h>
@@ -69,6 +70,7 @@ class __event__handler
                 {
                     map[responseType](ev);
                 }
+
                 free(ev);
             }
         }
