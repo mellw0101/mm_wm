@@ -4360,11 +4360,8 @@ namespace // 'window' class Namespace
     };
 }
 
-/**
-*****************************************
-*****************************************
+/****************************************
 **** @class @c window
-*****************************************
 ****************************************/
 class window
 {
@@ -4463,8 +4460,7 @@ class window
                     clear_window(__window); \
                     XCB::flush();           \
                 }
-            ;
-            
+
             void change_border_color(int __color, int __border_mask = ALL)
             {
                 if (__border_mask & UP   ) CHANGE_BORDER_COLOR(_border[0]);
@@ -4507,21 +4503,22 @@ class window
                 XCB::unmap_window(_window);
             }
             
-            void reparent(uint32_t __new_parent, int16_t __x, int16_t __y)
+            void reparent(uint32_t parent, int16_t x, int16_t y)
             {
                 AutoTimer t(__func__);
-                XCB::reparent_window(_window, __new_parent, __x, __y);
+                xcb_reparent_window(conn, _window, parent, x, y);
+                xcb_flush(conn);
             }          
              
             void kill()
             {
-                xcb_intern_atom_cookie_t protocols_cookie = xcb_intern_atom( conn, 1, 12, "WM_PROTOCOLS" );
-                xcb_intern_atom_reply_t *protocols_reply = xcb_intern_atom_reply( conn, protocols_cookie, nullptr );
+                xcb_intern_atom_cookie_t protocols_cookie = xcb_intern_atom(conn, 1, 12, "WM_PROTOCOLS");
+                xcb_intern_atom_reply_t *protocols_reply = xcb_intern_atom_reply( conn, protocols_cookie, nullptr);
 
-                xcb_intern_atom_cookie_t delete_cookie = xcb_intern_atom( conn, 0, 16, "WM_DELETE_WINDOW" );
-                xcb_intern_atom_reply_t *delete_reply = xcb_intern_atom_reply( conn, delete_cookie, nullptr );
+                xcb_intern_atom_cookie_t delete_cookie = xcb_intern_atom(conn, 0, 16, "WM_DELETE_WINDOW");
+                xcb_intern_atom_reply_t *delete_reply = xcb_intern_atom_reply(conn, delete_cookie, nullptr);
 
-                if ( ! protocols_reply )
+                if (!protocols_reply)
                 {
                     loutE << "protocols reply is null" << loutEND;
                     free(protocols_reply);
@@ -4529,7 +4526,7 @@ class window
                     return;
                 }
 
-                if ( ! delete_reply )
+                if (!delete_reply)
                 {
                     loutE << "delete reply is null" << loutEND;
                     free(protocols_reply);
@@ -4537,14 +4534,15 @@ class window
                     return;
                 }
 
-                send_event( KILL_WINDOW, (uint32_t[3]){ 32, protocols_reply->atom, delete_reply->atom });
+                uint32_t values[3] = {32, protocols_reply->atom, delete_reply->atom};
+                send_event(KILL_WINDOW, values);
                 xcb_flush(conn);
 
                 free(delete_reply);
                 free(protocols_reply);
 
-                signal_manager->_window_signals.remove( _window );
-                signal_manager->_window_client_map.remove( _window );
+                signal_manager->_window_signals.remove(_window);
+                signal_manager->_window_client_map.remove(_window);
             }
 
             void ewmh_kill()
@@ -4566,7 +4564,7 @@ class window
             {
                 AutoTimer t(__func__);
 
-                uint32_t w = this->_window;
+                uint32_t w = _window;
                 iAtomR p_reply(1, "WM_PROTOCOLS");
                 iAtomR d_reply(0, "WM_DELETE_WINDOW");
 
@@ -4575,14 +4573,17 @@ class window
                     loutE << "protocols reply is not valid" << loutEND;
                     return;
                 }
+
                 if (d_reply.is_not_valid())
                 {
                     loutE << "delete reply is not valid" << loutEND;
                     return;
                 }
 
-                send_event(KILL_WINDOW, (uint32_t[]){32, p_reply.Atom(), d_reply.Atom()});
+                const uint32_t values[3] = {32, p_reply.Atom(), d_reply.Atom()};
+                send_event(KILL_WINDOW, values);
                 xcb_flush(conn);
+
                 signal_manager->_window_signals.remove(w);
                 signal_manager->_window_client_map.remove(w);
             }    
@@ -4590,7 +4591,8 @@ class window
             void clear()
             {
                 AutoTimer timer(__func__);
-                XCB::clear_area(_window, _width, _height);
+                xcb_clear_area(conn, 0, _window, 0, 0, _width, _height);
+                xcb_flush(conn);
             }
 
             int focus()
@@ -4604,6 +4606,7 @@ class window
                     loutEWin << "window wan not correctly set as 'active EWMH window'" << '\n';
                     return 1;
                 }
+
                 raise();
                 return 0;
             }
@@ -4719,6 +4722,7 @@ class window
                     }
                     xcb_ewmh_get_atoms_reply_wipe( &reply ); // Clean up
                 }
+
                 return false; /* The atom was not found or the property could not be retrieved */
             }
 
@@ -4747,8 +4751,10 @@ class window
                     {
                         loutEWin << "No _MOTIF_WM_HINTS property found." << loutEND;
                     }
+
                     free(reply);
                 }
+
                 return is_frameless;
             }
 
@@ -4768,24 +4774,28 @@ class window
                             return true;
                         }
                     }
+
                     xcb_ewmh_get_atoms_reply_wipe(&wm_state);
                 }
+
                 return false;
             }
 
             bool is_active_EWMH_window()
             {
                 AutoTimer timer(__func__);
-
                 uint32_t active_window = 0;
-                uint8_t err = xcb_ewmh_get_active_window_reply(/** TODO: check for unchecked foo */
+                
+                /** TODO: check for unchecked foo */
+                uint8_t error = xcb_ewmh_get_active_window_reply
+                (
                     ewmh,
                     xcb_ewmh_get_active_window(ewmh, 0),
                     &active_window,
                     nullptr
                 );
 
-                if ( !err )
+                if (!error)
                 {
                     loutE << "xcb_ewmh_get_active_window_reply failed" << loutEND;
                 }
@@ -4797,8 +4807,13 @@ class window
             {
                 xcb_get_window_attributes_cookie_t cookie = xcb_get_window_attributes(conn, _window);
                 xcb_get_window_attributes_reply_t *reply = xcb_get_window_attributes_reply(conn, cookie, nullptr);
+                
                 uint32_t mask = (reply == nullptr) ? 0 : reply->all_event_masks;
-                if ( !mask ) loutE << "Error retriving window attributes" << loutEND;
+                if (!mask)
+                {
+                    loutE << "Error retriving window attributes" << loutEND;
+                }
+
                 free(reply);
                 return mask;
             }
@@ -4814,12 +4829,13 @@ class window
                         setMasks.push_back(static_cast<xcb_event_mask_t>(mask));
                     }
                 }
+
                 return setMasks;
             }
 
-            bool is_mask_active( uint32_t event_mask )
+            bool is_mask_active(uint32_t event_mask)
             {
-                vector<xcb_event_mask_t>(masks) = check_event_mask_codes();
+                vector<xcb_event_mask_t> masks = check_event_mask_codes();
                 for (const auto &ev_mask : masks)
                 {
                     if (ev_mask == event_mask)
@@ -4827,6 +4843,7 @@ class window
                         return true;
                     }
                 }
+
                 return false;
             }
             
@@ -4834,56 +4851,18 @@ class window
             {
                 AutoTimer timer(__func__);
 
-                xcb_get_window_attributes_cookie_t cookie = xcb_get_window_attributes( conn, _window );
-                xcb_get_window_attributes_reply_t *reply = xcb_get_window_attributes_reply( conn, cookie, nullptr );
-                if ( ! reply )
+                xcb_get_window_attributes_cookie_t cookie = xcb_get_window_attributes(conn, _window);
+                xcb_get_window_attributes_reply_t *reply = xcb_get_window_attributes_reply(conn, cookie, nullptr);
+                if (!reply)
                 {
                     loutEWin << "Unable to get window attributes" << '\n';
                     return false;
                 }
-                bool isMapped = ( reply->map_state == XCB_MAP_STATE_VIEWABLE );
+
+                bool isMapped = (reply->map_state == XCB_MAP_STATE_VIEWABLE);
                 free(reply);
+
                 return isMapped;
-            }
-
-            bool should_be_decorated()
-            {
-                // Atom for the _MOTIF_WM_HINTS property, used to control window decorations
-                const char* MOTIF_WM_HINTS = "_MOTIF_WM_HINTS";
-                
-                // Get the atom for the _MOTIF_WM_HINTS property
-                xcb_intern_atom_cookie_t cookie = xcb_intern_atom(conn, 0, strlen(MOTIF_WM_HINTS), MOTIF_WM_HINTS);
-                xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(conn, cookie, NULL);
-                if (!reply)
-                {
-                    loutE << "reply = nullptr" << loutEND;
-                    return true; // Default to decorating if we can't check
-                }
-
-                xcb_atom_t motif_wm_hints_atom = reply->atom; free(reply);
-
-                // Try to get the _MOTIF_WM_HINTS property from the window
-                xcb_get_property_cookie_t prop_cookie = xcb_get_property(conn, 0, _window, motif_wm_hints_atom, XCB_ATOM_ANY, 0, sizeof(uint32_t) * 5);
-                xcb_get_property_reply_t* prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
-
-                if (prop_reply && xcb_get_property_value_length(prop_reply) >= sizeof(uint32_t) * 5)
-                {
-                    uint32_t* hints = (uint32_t*)xcb_get_property_value(prop_reply);
-                    
-                    // Check if decorations are disabled
-                    bool decorate = !(hints[1] & (1 << 1));
-
-                    free(prop_reply);
-                    return decorate;
-                }
-
-                if (prop_reply)
-                {
-                    free(prop_reply);
-                }
-
-                // Default to decorating if we can't find or interpret the hints
-                return true;
             }
         
         /* Set           */
@@ -5133,16 +5112,20 @@ class window
                     xcb_generic_error_t* error = NULL; /* To capture any error */
                     bool result = xcb_icccm_get_wm_normal_hints_reply(conn, cookie, &hints, &error);
 
-                    if (!result || error) {
-                        if (error) {
+                    /* Now, check and use the hints as needed */
+                    if (!result || error)
+                    {
+                        if (error)
+                        {
                             loutEWin << "Error retrieving window hints" << '\n';
                             free(error);
+                        }
+                        
+                        return;
+                    }
 
-                        } return;
-
-                    } /* Now, check and use the hints as needed */
-
-                    if (hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE) {
+                    if (hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE)
+                    {
                         _min_width  = hints.min_width;
                         _min_height = hints.min_height;
 
@@ -5152,33 +5135,34 @@ class window
                         loutIWin << "height:"     << hints.height     << '\n';
                         loutIWin << "x:"          << hints.x          << '\n';
                         loutIWin << "y:"          << hints.y          << '\n';
-
-                    } else {
-                        loutEWin << "No minimum size hints available" << '\n';
-
                     }
-
+                    else
+                    {
+                        loutEWin << "No minimum size hints available" << '\n';
+                    }
                 }
 
                 void set_client_size_as_hints(int16_t *__x, int16_t *__y, uint16_t *__width, uint16_t *__height)
                 {
                     xcb_size_hints_t hints;
-                    memset( &hints, 0, sizeof( xcb_size_hints_t )); // Initialize hints structure
+                    
+                    // Initialize hints structure
+                    memset(&hints, 0, sizeof(xcb_size_hints_t));
 
                     xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_normal_hints(conn, _window);
                     xcb_generic_error_t* error = NULL; // To capture any error
-                    bool result = xcb_icccm_get_wm_normal_hints_reply( conn, cookie, &hints, &error );
+                    bool result = xcb_icccm_get_wm_normal_hints_reply(conn, cookie, &hints, &error);
 
-                    if ( !result || error )
+                    if (!result || error)
                     {
                         if (error)
                         {
                             loutEWin << "Error retrieving window hints" << loutEND;
                             free(error);
                         }
+
                         return;
                     }
-                    /* Now, check and use the hints as needed */
 
                     if ( hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE )
                     {
@@ -5193,37 +5177,17 @@ class window
                         {
                             loutE << "something went wrong hints.width" << hints.width << " is less then hints.min_width" << hints.min_width << '\n';
                         }
+
                         if ( hints.height < hints.min_height )
                         {
                             loutE << "something went wrong hints.height" << hints.height << " is less then hints.min_height" << hints.min_height << '\n';
                         }
-
                     }
                     else
                     {
                         loutEWin << "Could not get size hints" << '\n';
                     }
-
                 }
-                
-                string get_window_icon_name()
-                {
-                    xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_icon_name(conn, _window);
-                    xcb_icccm_get_text_property_reply_t reply; string icon_name;
-
-                    if (xcb_icccm_get_wm_icon_name_reply(conn, cookie, &reply, NULL))
-                    {
-                        icon_name = string(reply.name, reply.name_len);
-                        xcb_icccm_get_text_property_reply_wipe(&reply);
-                        loutIWin << "icon_name: " << icon_name << loutEND;
-                    }
-                    else
-                    {
-                        loutEWin << "Failed to retrieve the window icon name" << loutEND;
-                    }
-                    return icon_name;
-
-                } /** @brief @return the icon name of a window */
 
             uint32_t get_transient_for_window()
             {
@@ -5239,43 +5203,6 @@ class window
                 }
 
                 return t_for;
-            }
-            
-            void print_window_states()
-            {
-                xcb_intern_atom_reply_t *atom_r = XCB::atom_r(XCB::atom_cok("_NET_WM_STATE"));
-                if (atom_r == nullptr)
-                {
-                    loutEWin << "Failed to get _NET_WM_STATE atom." << loutEND;
-                    return;
-                }
-                xcb_atom_t atom = atom_r->atom;
-                free(atom_r);
-
-                xcb_get_property_cookie_t property_cookie = xcb_get_property(conn, 0, _window, atom, XCB_ATOM_ATOM, 0, 1024);
-                xcb_get_property_reply_t* property_reply = xcb_get_property_reply(conn, property_cookie, NULL);
-                if ( !property_reply )
-                {
-                    loutEWin << "Failed to get property." << loutEND;
-                    return;
-                }
-                xcb_atom_t* atoms = static_cast<xcb_atom_t*>(xcb_get_property_value(property_reply));
-                int atom_count = xcb_get_property_value_length(property_reply) / sizeof(xcb_atom_t);
-
-                for (int i = 0; i < atom_count; ++i)
-                {
-                    xcb_get_atom_name_cookie_t atom_name_cookie = xcb_get_atom_name(conn, atoms[i]);
-                    xcb_get_atom_name_reply_t* atom_name_reply = xcb_get_atom_name_reply(conn, atom_name_cookie, NULL);
-
-                    if (atom_name_reply)
-                    {
-                        int name_len = xcb_get_atom_name_name_length(atom_name_reply);
-                        char* name = xcb_get_atom_name_name(atom_name_reply);
-                        loutIWin << "Window   State: " << string(name, name_len) << loutEND;
-                        free(atom_name_reply);
-                    }
-                }
-                free(property_reply);
             }
 
             uint32_t get_pid()
@@ -5395,7 +5322,6 @@ class window
                 {
                     loutEWin << "Failed to retrieve WM_CLASS for window" << '\n';
                 }
-
             }
             
             string get_icccm_class()
@@ -5414,6 +5340,7 @@ class window
                 {
                     loutEWin << "Failed to retrieve WM_CLASS for window" << '\n';
                 }
+
                 return result;
             }
             
@@ -5469,8 +5396,12 @@ class window
                 AutoTimer t(__func__);
 
                 xcb_get_geometry_reply_t *g = xcb_get_geometry_reply(conn, xcb_get_geometry(conn, _window), nullptr);
-                if (g == nullptr) return (xcb_rectangle_t){0, 0, 0, 0};
-                xcb_rectangle_t rect = (xcb_rectangle_t) {g->x, g->y, g->width, g->height};
+                if (!g)
+                {
+                    return (xcb_rectangle_t){0, 0, 0, 0};
+                }
+
+                xcb_rectangle_t rect = (xcb_rectangle_t){g->x, g->y, g->width, g->height};
                 free(g);
                 return rect;
             }
@@ -12604,8 +12535,7 @@ class __dock__
             MIN
         } dock_anim_t;
 
-        void
-        anim_dock_menu(dock_anim_t __state)
+        void anim_dock_menu(dock_anim_t __state)
         {
             const int duration = 200;
 
@@ -12638,8 +12568,7 @@ class __dock__
             }
         }
 
-        void
-        create_window__()
+        void create_window__()
         {
             dock_menu.create_window(
                 screen->root,
@@ -12654,8 +12583,7 @@ class __dock__
             dock_search.init();
         }
 
-        void
-        show__(uint32_t __window)
+        void show__(uint32_t __window)
         {
             if (__window == dock_menu)
             {
@@ -12679,8 +12607,7 @@ class __dock__
             }
         }
 
-        void
-        hide__(uint32_t __window)
+        void hide__(uint32_t __window)
         {
             if (__window == dock_menu)
             {
@@ -15818,7 +15745,7 @@ void setup_wm()
     NEW_CLASS(signal_manager, __signal_manager__) { signal_manager->init(); }
     NEW_CLASS(file_system,    __file_system__   ) { file_system->init_check(); }
 
-    /* crypro = new __crypto__; */
+    crypro = new __crypto__;
 
     crypro = Malloc<__crypto__>().allocate();
 
@@ -15859,12 +15786,10 @@ int main()
 
     test tester;
     tester.init(); */
-
-    /* event_handler->run(); */
     
     setup_wm();
     ev_hand->main_loop();
     xcb_disconnect(conn);
-    return 0;
 
+    return 0;
 }

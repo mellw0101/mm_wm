@@ -675,5 +675,86 @@ XCB_KEY_PRESS,
     }
 }); */
 
+/** FROM: class window  */
+
+/* bool should_be_decorated()
+{
+    // Atom for the _MOTIF_WM_HINTS property, used to control window decorations
+    const char* MOTIF_WM_HINTS = "_MOTIF_WM_HINTS";
+    
+    // Get the atom for the _MOTIF_WM_HINTS property
+    xcb_intern_atom_cookie_t cookie = xcb_intern_atom(conn, 0, strlen(MOTIF_WM_HINTS), MOTIF_WM_HINTS);
+    xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(conn, cookie, NULL);
+    if (!reply)
+    {
+        loutE << "reply = nullptr" << loutEND;
+        return true; // Default to decorating if we can't check
+    }
+
+    xcb_atom_t motif_wm_hints_atom = reply->atom; free(reply);
+
+    // Try to get the _MOTIF_WM_HINTS property from the window
+    xcb_get_property_cookie_t prop_cookie = xcb_get_property(conn, 0, _window, motif_wm_hints_atom, XCB_ATOM_ANY, 0, sizeof(uint32_t) * 5);
+    xcb_get_property_reply_t* prop_reply = xcb_get_property_reply(conn, prop_cookie, NULL);
+
+    if (prop_reply && xcb_get_property_value_length(prop_reply) >= sizeof(uint32_t) * 5)
+    {
+        uint32_t* hints = (uint32_t*)xcb_get_property_value(prop_reply);
+        
+        // Check if decorations are disabled
+        bool decorate = !(hints[1] & (1 << 1));
+
+        free(prop_reply);
+        return decorate;
+    }
+
+    if (prop_reply)
+    {
+        free(prop_reply);
+    }
+
+    // Default to decorating if we can't find or interpret the hints
+    return true;
+} */
+
+/* void print_window_states()
+{
+    xcb_intern_atom_reply_t *atom_r = XCB::atom_r(XCB::atom_cok("_NET_WM_STATE"));
+    if (atom_r == nullptr)
+    {
+        loutEWin << "Failed to get _NET_WM_STATE atom." << loutEND;
+        return;
+    }
+
+    xcb_atom_t atom = atom_r->atom;
+    free(atom_r);
+
+    xcb_get_property_cookie_t property_cookie = xcb_get_property(conn, 0, _window, atom, XCB_ATOM_ATOM, 0, 1024);
+    xcb_get_property_reply_t* property_reply = xcb_get_property_reply(conn, property_cookie, NULL);
+    if ( !property_reply )
+    {
+        loutEWin << "Failed to get property." << loutEND;
+        return;
+    }
+    
+    xcb_atom_t* atoms = static_cast<xcb_atom_t*>(xcb_get_property_value(property_reply));
+    int atom_count = xcb_get_property_value_length(property_reply) / sizeof(xcb_atom_t);
+
+    for (int i = 0; i < atom_count; ++i)
+    {
+        xcb_get_atom_name_cookie_t atom_name_cookie = xcb_get_atom_name(conn, atoms[i]);
+        xcb_get_atom_name_reply_t* atom_name_reply = xcb_get_atom_name_reply(conn, atom_name_cookie, NULL);
+
+        if (atom_name_reply)
+        {
+            int name_len = xcb_get_atom_name_name_length(atom_name_reply);
+            char* name = xcb_get_atom_name_name(atom_name_reply);
+            loutIWin << "Window   State: " << string(name, name_len) << loutEND;
+            free(atom_name_reply);
+        }
+    }
+
+    free(property_reply);
+} */
 
 /** <- END: */
