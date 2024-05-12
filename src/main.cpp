@@ -3296,11 +3296,12 @@ class evH
                     case XCB_EXPOSE:
                     {
                         AutoTimer t("XCB_EXPOSE");
-
                         RE_CAST_EV(xcb_expose_event_t);
                         signal_manager->_window_signals.emit(e->window, XCB_EXPOSE);
+
                         break;
                     }
+
                     case XCB_BUTTON_PRESS:
                     {
                         AutoTimer t("XCB_BUTTON_PRESS");
@@ -3329,8 +3330,10 @@ class evH
                             }
                         }
                         buttonPressH(ev);
+
                         break;
                     }
+
                     case XCB_KEY_PRESS:
                     {
                         AutoTimer t("XCB_KEY_PRESS");
@@ -4675,7 +4678,8 @@ class window
                     ev.data.data32[0] = value_list[2];
                     ev.data.data32[1] = XCB_CURRENT_TIME;
 
-                    xcb_send_event(
+                    xcb_send_event
+                    (
                         conn,
                         true,
                         _window,
@@ -6061,7 +6065,8 @@ class window
                 int len;
                 xcb_char2b_t *char2b_str = to_char2b(__str, &len);
                 
-                xcb_image_text_16(
+                xcb_image_text_16
+                (
                     conn,
                     len,
                     _window,
@@ -6095,9 +6100,10 @@ class window
                     {   U_ARROW,    SUPER                   },
                     {   D_ARROW,    SUPER                   },
                     {   TAB,        ALT                     },
-                    /* {   S,          SUPER                   }, // key_binding for 'system_settings'
-                    {   K,          SUPER                   } *//* ,
-                    {   R,          SUPER                   }, // key_binding for 'runner_window'
+                    {   K,          SUPER                   }
+                    
+                    /* {   S,          SUPER                   }, // key_binding for 'system_settings' */
+                    /* ,{   R,          SUPER                   }, // key_binding for 'runner_window'
                     {   F,          SUPER                   }, // key_binding for 'file_app'
                     {   D,          SUPER                   }  // key_binding for 'debub menu' */
                 });
@@ -6618,8 +6624,8 @@ class window
                 @param input Pointer to the UTF-8 encoded string.
                 @return The total number of Unicode characters in the input string.
              
-                */
-            size_t calculate_utf8_size(const char *input)
+            */
+            size_t calculate_utf8_size(const char* input)
             {
                 size_t count = 0;
                 while (*input != '\0')
@@ -6658,7 +6664,7 @@ class window
                 return count;
             }
 
-            xcb_char2b_t *to_char2b(const char *input, int *len)
+            xcb_char2b_t* to_char2b(const char* input, int* len)
             {
                 size_t max_chars = calculate_utf8_size(input);
 
@@ -6764,6 +6770,121 @@ class window
             }
 };
 
+class dialog_window
+{
+    private:
+        window _win, _no_window, _yes_window;
+        string _message;
+        function<void()> _yes_action, _no_action;
+
+    public:
+        dialog_window(const string& message, function<void()> yes_action = nullptr, function<void()> no_action = nullptr)
+        : _message(message), _yes_action(yes_action), _no_action(no_action)
+        {
+            uint16_t width = 400, height = 200;
+
+            _win.create_window
+            (
+                screen->root,
+                ((screen->width_in_pixels / 2) - (width / 2)),
+                ((screen->height_in_pixels / 2) - (height / 2)),
+                width,
+                height,
+                BLACK,
+                XCB_EVENT_MASK_EXPOSURE,
+                MAP
+            );
+
+            ConnSig(_win, XCB_EXPOSE,
+                _win.draw_acc_16(_message.c_str());
+            );
+
+            Emit(_win, XCB_EXPOSE);
+            
+            _yes_window.create_window
+            (
+                _win,
+                width - 40,
+                height - 20,
+                40,
+                20,
+                BLACK,
+                BUTTON_EVENT_MASK,
+                MAP,
+                nullptr,
+                CURSOR::hand2
+            );
+
+            ConnSig(_yes_window, L_MOUSE_BUTTON_EVENT,
+                _win.unmap();
+                _win.kill();
+                signal_manager->_window_signals.emit(screen->root, XCB_DESTROY_NOTIFY, _win);
+                if (_yes_action)
+                {
+                    _yes_action();
+                }
+            );
+
+            ConnSig(_yes_window, XCB_EXPOSE,
+                _yes_window.draw_acc_16("Yes");
+            );
+
+            Emit(_yes_window, XCB_EXPOSE);
+
+            ConnSig(_yes_window, XCB_LEAVE_NOTIFY,
+                _yes_window.change_backround_color(BLACK);
+            );
+
+            ConnSig(_yes_window, XCB_ENTER_NOTIFY,
+                _yes_window.change_backround_color(WHITE);
+            );
+            
+            _no_window.create_window
+            (
+                _win,
+                0,
+                height - 20,
+                40,
+                20,
+                BLACK,
+                BUTTON_EVENT_MASK,
+                MAP,
+                nullptr,
+                CURSOR::hand2
+            );
+
+            ConnSig(_no_window, L_MOUSE_BUTTON_EVENT,
+                _win.unmap();
+                _win.kill();
+                signal_manager->_window_signals.emit(screen->root, XCB_DESTROY_NOTIFY, _win);
+                if (_no_action)
+                {
+                    _no_action();
+                }
+            );
+
+            ConnSig(_no_window, XCB_EXPOSE,
+                _no_window.draw_acc_16("No");
+            );
+
+            Emit(_no_window, XCB_EXPOSE);
+
+            ConnSig(_no_window, XCB_LEAVE_NOTIFY,
+                _no_window.change_backround_color(BLACK);
+            );
+
+            ConnSig(_no_window, XCB_ENTER_NOTIFY,
+                _no_window.change_backround_color(WHITE);
+            );
+
+            signal_manager->_window_signals.emit(screen->root, XCB_MAP_REQUEST, _win);
+        }
+
+        /* ~dialog_window()
+        {
+            delete this;
+        } */
+};
 
 class PolkitListener
 : public DBus::IntrospectableProxy
@@ -9274,7 +9395,7 @@ class Window_Manager
 
                 ConnSig(screen->root, XCB_DESTROY_NOTIFY,
                     loutI << "Destroy notify" << loutEND;
-                    client *c = client_from_window(&w);
+                    client* c = client_from_window(&w);
                     if (!c) return;
                     c->kill();
                     remove_client(c);
@@ -9811,6 +9932,20 @@ class __status_bar__
             ConnSig(_w[_AUDIO], XCB_LEAVE_NOTIFY,
                 _w[_AUDIO].change_backround_color(DARK_GREY);
             );
+
+            _w[SHUTDOWN].create_window
+            (
+                _w[_BAR],
+                WIFI_WINDOW_X - 50 - BUTTON_SIZE,
+                0,
+                BUTTON_SIZE,
+                BUTTON_SIZE,
+                BLACK,
+                BUTTON_EVENT_MASK,
+                MAP
+            );
+
+            // _w[SHUTDOWN_DROPDOWN].create_window(screen->root, int16_t x, int16_t y, uint16_t width, uint16_t height)
         }
 
         void show_(uint32_t window)
@@ -9955,7 +10090,7 @@ class __status_bar__
             return string(buf);
         }
 
-        FixedArray<window, 8> _w{};
+        FixedArray<window, 9> _w{};
         typedef enum {
             _BAR,
             _TIME_DATE,
@@ -9964,7 +10099,8 @@ class __status_bar__
             _WIFI_CLOSE,
             _WIFI_INFO,
             _AUDIO,
-            _AUDIO_DROPDOWN
+            _AUDIO_DROPDOWN,
+            SHUTDOWN
         } window_type_t;
 
         void init()
@@ -14727,6 +14863,14 @@ void keyPressH(xcb_generic_event_t* ev)
     {
         ev_sigs->emit(ddTerm->w, DropDownTermSignal, {e->detail, e->state});
     }
+
+    if (e->detail == wm->key_codes.k)
+    {
+        if (e->state & SUPER)
+        {
+            dialog_window *d_window = new dialog_window{"hello"};
+        }
+    }
 }
 
 void buttonPressH(const xcb_generic_event_t *ev)
@@ -14966,6 +15110,18 @@ int main()
 
     test tester;
     tester.init(); */
+
+    /* function<void()> polkit_thread = [&]() -> void
+    {
+        DBus::BusDispatcher dispatcher;
+        DBus::default_dispatcher = &dispatcher;
+        DBus::Connection bus = DBus::Connection::SystemBus();
+        
+        PolkitListener listener(bus, "/org/freedesktop/PolicyKit1/AuthenticationAgent", "org.freedesktop.PolicyKit1");
+        dispatcher.enter();
+    };
+
+    thread(polkit_thread).detach(); */
     
     setup_wm();
     ev_hand->main_loop();

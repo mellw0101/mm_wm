@@ -54,7 +54,8 @@ LIBS = \
 	-lXau			\
 	-lpthread		\
 	-liw			\
-	-lpulse
+	-lpulse			\
+	-ldbus-1
 
 LDFLAGS = \
 	${LIBS} 				\
