@@ -8255,17 +8255,17 @@ class Entry
         function<void()> action;
 
     /* Methods */
-        void make_window(uint32_t __parent, int16_t __x, int16_t __y, uint16_t __width, uint16_t __height)
+        void make_window(uint32_t parent, int16_t x, int16_t y, uint16_t width, uint16_t height)
         {
             AutoTimer t("Entry:make_window");
 
             window.create_window
             (
-                __parent,
-                __x,
-                __y,
-                __width,
-                __height,
+                parent,
+                x,
+                y,
+                width,
+                height,
                 BLACK,
                 BUTTON_EVENT_MASK,
                 MAP
@@ -8422,10 +8422,11 @@ class context_menu
             entries.push_back(entry);
         }
 
-    context_menu()
-    {
-        create_dialog_win_();
-    }
+    /* Constructor */
+        context_menu()
+        {
+            create_dialog_win_();
+        }
 };
 
 
@@ -9306,7 +9307,7 @@ class __network__
             string result;
 
             getifaddrs(&ifAddrStruct);
-            for (ifa = ifAddrStruct; ifa != nullptr; ifa = ifa->ifa_next)
+            for (ifa = ifAddrStruct; ifa; ifa = ifa->ifa_next)
             {
                 CONTINUE_IF(ifa->ifa_addr == nullptr);
                 if (ifa->ifa_addr->sa_family == AF_INET) // check it is IP4
@@ -9334,7 +9335,7 @@ class __network__
                 }
             }
 
-            if (ifAddrStruct != nullptr) freeifaddrs(ifAddrStruct);
+            if (ifAddrStruct) freeifaddrs(ifAddrStruct);
             return result;
         }
 
