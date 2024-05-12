@@ -1,3 +1,4 @@
+#include <dbus-c++-1/dbus-c++/dbus.h>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -6761,6 +6762,22 @@ class window
                 
                 return char2b;
             }
+};
+
+
+class PolkitListener
+: public DBus::IntrospectableProxy
+, public DBus::ObjectProxy
+{
+    public:
+        PolkitListener(DBus::Connection& connection, const char* path, const char* service)
+        : DBus::ObjectProxy(connection, path, service)
+        {}
+
+        void RequestAuthentication(const string& action_id)
+        {
+            loutI << "SUCCESS " << action_id << loutEND;
+        }
 };
 
 
