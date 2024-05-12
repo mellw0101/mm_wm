@@ -15,6 +15,12 @@
 
 using namespace std;
 
+
+/*********************************************************************
+*****************<<    @class @c ProfilerStats    >>******************
+*********************************************************************/
+
+
 void ProfilerStats::record(double value)
 {
     values.push_back(value);
@@ -50,50 +56,26 @@ size_t ProfilerStats::count() const
     return values.size();
 }
 
-/**
-**********************************************************************
-**********************************************************************
-****************<<    @class @c GlobalProfiler      >>****************
-**********************************************************************
+/*********************************************************************
+*****************<<   @class @c GlobalProfiler    >>******************
 *********************************************************************/
+
+
 void GlobalProfiler::record(const string &name, double duration)
 {
     stats[name].record(duration);
 }
 
-string makeNamePadding(const string &__s)
+string makeNamePadding(const string& s)
 {
     stringstream ss;
-    for (int i = 0; (i + __s.length()) < 30; ++i)
+    for (int i = 0; (i + s.length()) < 30; ++i)
     {
         ss << ' ';
     }
+
     return ss.str();
 }
-
-/* string makeDoublePadding(const double &__d)
-{
-    std::stringstream ss;
-    for (int i = 0; (i + std::to_string(__d).length()) < 12; ++i)
-    {
-        ss << ' ';
-    }
-    return ss.str();
-} */
-
-/* string makeDoublePadding(const double &__d)
-{
-    std::ostringstream oss;
-    oss << std::setprecision(2) << __d; // Set desired precision for the double's string representation
-    std::string doubleAsString = oss.str(); // Convert the double to a string with fixed precision
-
-    std::stringstream ss;
-    for (size_t i = doubleAsString.length(); i < 12; ++i) // Calculate the padding based on the length of the double's string representation
-    {
-        ss << ' ';
-    }
-    return ss.str();
-} */
 
 string mili()
 {
@@ -121,9 +103,9 @@ string mili()
     return ss.str();
 }
 
-void GlobalProfiler::report(const string &filename)
+void GlobalProfiler::report(const string& filename)
 {
-    std::ofstream file(filename, std::ios::app);
+    ofstream file(filename, ios::app);
     file << "\n\nProfiling report: " << mili() << '\n';
     for (const auto& pair : stats)
     {
@@ -136,11 +118,12 @@ void GlobalProfiler::report(const string &filename)
             " Count = " << pair.second.count()  <<           /* makeDoublePadding(pair.second.count())  << */
         "\n";
     }
-    (void)file.close();
+    
+    file.close();
     
     for (const auto &i : stats)
     {
-        std::ofstream File("/home/mellw/gprof/" + i.first, std::ios::app);
+        ofstream File("/home/mellw/gprof/" + i.first, ios::app);
         File <<
             i.second.mean()   << ':' <<
             i.second.stddev() << ':' <<
@@ -161,14 +144,15 @@ void init_gProf()
     gProf = GlobalProfiler::createNewGprof();
 }
 
-/** 
-**********************************************************************
-**********************************************************************
+
+/*********************************************************************
 *****************<<      @class @c AutoTimer      >>******************
-**********************************************************************
-**********************************************************************/
+*********************************************************************/
+
+
 AutoTimer::AutoTimer(const string &name)
-: name(name), start(chrono::high_resolution_clock::now()) {}
+: name(name), start(chrono::high_resolution_clock::now())
+{}
 
 AutoTimer::~AutoTimer()
 {
@@ -177,40 +161,11 @@ AutoTimer::~AutoTimer()
     gProf->record(name, duration.count());
 }
 
-
 /* Register at-exit handler to generate the report */
 void setupReportGeneration()
 {
-    std::atexit([]
+    atexit([]
     {
         gProf->report("/home/mellw/profiling_report.txt");
     });
 }
-
-/* Register at-exit handler to generate the report */
-void setupVulkanReportGen()
-{
-    std::atexit([]
-    {
-        gProf->report("/home/mellw/vulkan_profiling_data_report.txt");
-    });
-}
-
-/* int main()
-{
-    setupReportGeneration();
-
-    {
-        AutoTimer timer("FunctionA");
-        // Simulate work
-    }
-
-    {
-        AutoTimer timer("FunctionB");
-        // Simulate work
-    }
-
-    // More application code...
-
-    return 0;
-} */

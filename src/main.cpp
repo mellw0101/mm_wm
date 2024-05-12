@@ -4360,9 +4360,12 @@ namespace // 'window' class Namespace
     };
 }
 
-/****************************************
-**** @class @c window
-****************************************/
+
+/*********************************************************************
+*****************<<       @class @c window        >>******************
+*********************************************************************/
+
+
 class window
 {
     public:
@@ -6771,6 +6774,12 @@ class window
             }
 };
 
+
+/*********************************************************************
+*****************<<       @class @c client        >>******************
+*********************************************************************/
+
+
 #define CLI_TITLE_BAR_EXPOSE_BIT 1
 #define CLI_TITLE_REQ_BIT 2
 class client
@@ -8299,6 +8308,12 @@ class client
         };
 };
 
+
+/*********************************************************************
+*****************<<       @class @c desktop       >>******************
+*********************************************************************/
+
+
 class desktop
 {
     public:
@@ -8408,9 +8423,12 @@ class Key_Codes
         xcb_key_symbols_t *keysyms;
 };
 
-/****************************************
-**** CLASS: @c Entry
-****************************************/
+
+/*********************************************************************
+*****************<<        @class @c Entry        >>******************
+*********************************************************************/
+
+
 class Entry
 {
     public:
@@ -8468,9 +8486,12 @@ class Entry
         }
 };
 
-/****************************************
-**** @class @c context_menu
-****************************************/
+
+/*********************************************************************
+*****************<<     @class @c context_menu    >>******************
+*********************************************************************/
+
+
 class context_menu
 {
     private:
@@ -8482,7 +8503,7 @@ class context_menu
         vector<Entry> entries;
 
     /* Methods   */
-        void create_dialog_win__()
+        void create_dialog_win_()
         {
             context_window.create_window
             (
@@ -8497,11 +8518,11 @@ class context_menu
             );
 
             ConnSig(context_window,L_MOUSE_BUTTON_EVENT,
-                hide__();
+                hide_();
             );
         }
 
-        void hide__()
+        void hide_()
         {
             context_window.unmap();
             context_window.kill();
@@ -8512,7 +8533,7 @@ class context_menu
             }
         }
         
-        void make_entries__()
+        void make_entries_()
         {
             for (int i(0); i < entries.size(); ++i)
             {
@@ -8563,10 +8584,10 @@ class context_menu
             context_window.focus();
 
             ConnSig(context_window, HIDE_CONTEXT_MENU,
-                hide__();
+                hide_();
             );
 
-            make_entries__();
+            make_entries_();
         }
         
         void add_entry(string name, function<void()> action)
@@ -8579,13 +8600,16 @@ class context_menu
 
     context_menu()
     {
-        create_dialog_win__();
+        create_dialog_win_();
     }
 };
 
-/****************************************
-**** @class @c Window_Manager
-****************************************/
+
+/*********************************************************************
+*****************<<    @class @c Window_Manager   >>******************
+*********************************************************************/
+
+
 class Window_Manager
 {
     /* Defines     */
@@ -9433,7 +9457,13 @@ class Window_Manager
             }
 
 };
-static Window_Manager *wm(nullptr);
+static Window_Manager* wm = nullptr;
+
+
+/*********************************************************************
+*****************<<     @class @c __network__     >>******************
+*********************************************************************/
+
 
 class __network__
 {
@@ -9488,7 +9518,13 @@ class __network__
         __network__() {}
 
 };
-static __network__ *network(nullptr);
+static __network__* network = nullptr;
+
+
+/*********************************************************************
+*****************<<      @class @c __wifi__       >>******************
+*********************************************************************/
+
 
 class __wifi__
 {
@@ -9604,6 +9640,12 @@ class __wifi__
 
 };
 static __wifi__ *wifi(nullptr);
+
+
+/*********************************************************************
+*****************<<      @class @c __audio__      >>******************
+*********************************************************************/
+
 
 class __audio__
 {
@@ -9754,6 +9796,12 @@ class __audio__
 
 };
 __audio__ audio;
+
+
+/*********************************************************************
+*****************<<    @class @c __status_bar__   >>******************
+*********************************************************************/
+
 
 namespace // '__status_bar__' helpers
 {
@@ -10087,12 +10135,18 @@ class __status_bar__
 };
 static __status_bar__ *status_bar(nullptr);
 
+
+/*********************************************************************
+*****************<<     @class @c Mwm_Animator    >>******************
+*********************************************************************/
+
+
 /**
 
-  @class Mwm_Animator
-  @brief Class for animating the position and size of an XCB window.
+    @class Mwm_Animator
+    @brief Class for animating the position and size of an XCB window.
 
- */
+*/
 class Mwm_Animator
 {
     public:
@@ -10940,457 +10994,6 @@ void animate_client(client *const &c, int endX, int endY, int endWidth, int endH
     );
     c->update();
 }
-
-class button
-{
-    public:
-    // Constructor.
-        button() {}
-    
-    // Variables.
-        window(window);
-        const char *name;
-    
-    // Methods.
-        void create(uint32_t parent_window, int16_t x, int16_t y, uint16_t width, uint16_t height, COLOR color)
-        {
-            window.create_window(parent_window, x, y, width, height);
-            window.set_backround_color(color);
-            window.grab_button
-            (
-                {
-                    {L_MOUSE_BUTTON, NULL}
-                }
-            );
-
-            window.map();
-        }
-        
-        void action(function<void()> action)
-        {
-            button_action = action;
-        }
-
-        void add_event(function<void(Ev ev)> action)
-        {
-            ev_a = action;
-            event_id = event_handler->setEventCallback(XCB_BUTTON_PRESS, ev_a);
-        }
-        
-        void activate() const
-        {
-            button_action();
-        }
-        
-        void put_icon_on_button()
-        {
-            string icon_path = file.findPngFile({
-                "/usr/share/icons/gnome/256x256/apps/",
-                "/usr/share/icons/hicolor/256x256/apps/",
-                "/usr/share/icons/gnome/48x48/apps/",
-                "/usr/share/icons/gnome/32x32/apps/",
-                "/usr/share/pixmaps"
-            }, name );
-
-            if (icon_path.empty())
-            {
-                loutI << "could not find icon for button: " << name << loutEND;
-                return;
-            }
-
-            window.set_backround_png(icon_path.c_str());
-        }
-    
-    private: 
-    // Variables.
-        function<void()> button_action;
-        function<void(Ev ev)> ev_a;
-        File file;
-        Logger log;
-        int event_id = 0;
-};
-
-class buttons
-{
-    public:
-    // Constructors.
-        buttons() {}
-
-    // Variables.
-        vector<button>(list);
-    
-    // Methods.
-        void add(const char *name, function<void()>(action))
-        {
-            button button;
-            button.name = name;
-            button.action(action);
-            list.push_back(button);
-        }
-
-        int size()
-        {
-            return list.size();
-        }
-
-        int index()
-        {
-            return list.size() - 1;
-        }
-
-        // void run_action(const uint32_t & window)
-        // {
-        //     for (const auto &button : list)
-        //     {
-        //         if (window == button.window)
-        //         {
-        //             button.activate();
-        //             return;
-        //         }
-        //     }
-        // }
-};
-
-class search_window
-{
-    private:
-    // Methods.
-        void setup_events()
-        {
-            event_handler->setEventCallback(XCB_KEY_PRESS, [&](Ev ev) -> void
-            {
-                const xcb_key_press_event_t * e = reinterpret_cast<const xcb_key_press_event_t *>(ev);
-                if (e->event == main_window)
-                {
-                    if (e->detail == wm->key_codes.a)
-                    {
-                        if (e->state == SHIFT)
-                        {
-                            search_string += "A";
-                        }
-                        else
-                        {
-                            search_string += "a";
-                        }
-                    }
-
-                    if (e->detail == wm->key_codes.b)
-                    {
-                        if (e->state == SHIFT)
-                        {
-                            search_string += "B";
-                        }
-                        else
-                        {
-                            search_string += "b";
-                        }
-                    }
-                    
-                    if (e->detail == wm->key_codes.c)
-                    {
-                        if (e->state == SHIFT)
-                        {
-                            search_string += "C";
-                        }
-                        else
-                        {
-                            search_string += "c";
-                        }
-                    }
-                    
-                    if (e->detail == wm->key_codes.d)
-                    {
-                        if (e->state == SHIFT)
-                        {
-                            search_string += "D";
-                        }
-                        else
-                        {
-                            search_string += "d";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.e) {
-                        if(e->state == SHIFT) {
-                            search_string += "E";
-                        } else {
-                            search_string += "e";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.f) {
-                        if(e->state == SHIFT) {
-                            search_string += "F";
-                        } else {
-                            search_string += "f";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.g) {
-                        if(e->state == SHIFT) {
-                            search_string += "G";
-                        } else {
-                            search_string += "g";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.h) {
-                        if(e->state == SHIFT) {
-                            search_string += "H";
-                        } else {
-                            search_string += "h";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.i) {
-                        if(e->state == SHIFT) {
-                            search_string += "I";
-                        } else {
-                            search_string += "i";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.j) {
-                        if(e->state == SHIFT) {
-                            search_string += "J";
-                        } else {
-                            search_string += "j";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.k) {
-                        if(e->state == SHIFT) {
-                            search_string += "K";
-                        } else {
-                            search_string += "k";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.l) {
-                        if(e->state == SHIFT) {
-                            search_string += "L";
-                        } else {
-                            search_string += "l";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.m) {
-                        if(e->state == SHIFT) {
-                            search_string += "M";
-                        } else {
-                            search_string += "m";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.n) {
-                        if(e->state == SHIFT) {
-                            search_string += "N";
-                        } else {
-                            search_string += "n";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.o) {
-                        if(e->state == SHIFT) {
-                            search_string += "O";
-                        } else {
-                            search_string += "o"; 
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.p) {
-                        if(e->state == SHIFT) {
-                            search_string += "P";
-                        } else {
-                            search_string += "p";
-                        }
-                    }
-
-                    if(e->detail == wm->key_codes.q) {
-                        if(e->state == SHIFT) {
-                            search_string += "Q";
-                        } else { 
-                            search_string += "q";
-                        }
-                    }
-
-                    if(e->detail == wm->key_codes.r) {
-                        if(e->state == SHIFT) {
-                            search_string += "R";
-                        } else {
-                            search_string += "r";
-                        }
-                    }
-
-                    if(e->detail == wm->key_codes.s) {
-                        if(e->state == SHIFT) {
-                            search_string += "S";
-                        } else {
-                            search_string += "s";
-                        }
-                    }
-
-                    if(e->detail == wm->key_codes.t) {
-                        if(e->state == SHIFT) {
-                            search_string += "T";
-                        } else {
-                            search_string += "t";
-                        }
-                    }
-
-                    if(e->detail == wm->key_codes.u) {
-                        if(e->state == SHIFT) {
-                            search_string += "U";
-                        } else {
-                            search_string += "u";
-                        }
-                    }
-
-                    if(e->detail == wm->key_codes.v) {
-                        if(e->state == SHIFT) {
-                            search_string += "V";
-                        } else {
-                            search_string += "v";
-                        }
-                    }
-
-                    if(e->detail == wm->key_codes.w) {
-                        if(e->state == SHIFT) {
-                            search_string += "W";
-                        } else {
-                            search_string += "w";
-                        }
-                    }
-
-                    if(e->detail == wm->key_codes.x) {
-                        if(e->state == SHIFT) {
-                            search_string += "X";
-                        } else {
-                            search_string += "x";
-                        }
-                    }
-                    
-                    if(e->detail == wm->key_codes.y) {
-                        if(e->state == SHIFT) {
-                            search_string += "Y";
-                        } else {
-                            search_string += "y";
-                        }
-                    }
-
-                    if(e->detail == wm->key_codes.z) {
-                        if(e->state == SHIFT) {
-                            search_string += "Z";
-                        } else {
-                            search_string += "z";
-                        }
-                    }
-
-                    if(e->detail == wm->key_codes.space_bar) {
-                        search_string += " ";
-                    }
-
-                    if(e->detail == wm->key_codes._delete) {
-                        if(search_string.length() > 0) {
-                            search_string.erase(search_string.length() - 1);
-                            main_window.clear();
-                        }
-                    }
-
-                    if(e->detail == wm->key_codes.enter) {
-                        if(enter_function) {
-                            enter_function();
-                        }
-                    
-                        search_string = "";
-                        main_window.clear();
-                    }
-
-                    draw_text();
-                }
-            });
-
-            event_handler->setEventCallback(XCB_BUTTON_PRESS, [&](Ev ev) -> void {
-                const xcb_button_press_event_t * e = reinterpret_cast<const xcb_button_press_event_t *>(ev);
-                if(e->event == main_window) {
-                    /* main_window.raise();
-                    main_window.focus_input(); */
-                }
-            });
-        }
-
-        void draw_text()
-        {
-            main_window.draw_text(search_string.c_str(), WHITE, BLACK, "7x14", 2, 14);
-            if (search_string.length() > 0)
-            {
-                results = file.search_for_binary(search_string.c_str());
-                int entry_list_size = results.size(); 
-                if (results.size() > 7)
-                {
-                    entry_list_size = 7;
-                }
-
-                main_window.height(20 * entry_list_size);
-                xcb_flush(conn);
-                for (int i = 0; i < entry_list_size; ++i)
-                {
-                    entry_list[i].draw_text(results[i].c_str(), WHITE, BLACK, "7x14", 2, 14);
-                }
-            }
-        }
-        
-    // Variables.
-        function<void()> enter_function;
-        File file;
-        vector<string> results;
-        vector<window> entry_list;
-
-    public:
-    // Variabels.
-        window(main_window);
-        string search_string = "";
-    
-    // Methods.
-        void create(const uint32_t & parent_window, const uint32_t & x, const uint32_t & y, const uint32_t & width, const uint32_t & height)
-        {
-            main_window.create_window(parent_window, x, y, width, height);
-            main_window.set_backround_color(BLACK);
-            uint32_t mask =  XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_FOCUS_CHANGE;
-            main_window.apply_event_mask(& mask);
-            main_window.map();
-            main_window.grab_button({
-                { L_MOUSE_BUTTON, NULL }
-            });
-
-            main_window.grab_keys_for_typing();
-            main_window.grab_default_keys();
-
-            for (int i = 0; i < 7; ++i)
-            {
-                window entry;
-                entry.create_window(main_window, 0, (20 * (i + 1)) , 140, 20);
-                entry.set_backround_color(BLACK);
-                /* entry.raise(); */
-                entry.map();
-                entry_list.push_back(entry);
-            }
-
-            /* main_window.raise();
-            main_window.focus_input(); */
-        }
-
-        void add_enter_action(std::function<void()> enter_action)
-        {
-            enter_function = enter_action;
-        }
-
-        void init()
-        {
-            setup_events();
-        }
-
-};
 
 /* class add_app_dialog_window
 {
@@ -12502,7 +12105,7 @@ class __dock__
         STATIC_CONSTEXPR_TYPE(uint16_t, _width, 400);
         STATIC_CONSTEXPR_TYPE(uint16_t, _height, 200);
 
-        client *f_c = nullptr;
+        client* f_c = nullptr;
 
     /* Methods     */
         typedef enum {
@@ -12510,13 +12113,14 @@ class __dock__
             MIN
         } dock_anim_t;
 
-        void anim_dock_menu(dock_anim_t __state)
+        void anim_dock_menu_(dock_anim_t state)
         {
             const int duration = 200;
 
-            if (__state == MAX)
+            if (state == MAX)
             {
-                __animate__::window(
+                __animate__::window
+                (
                     dock_menu,
                     SCREEN_CENTER_X(_width),
                     SCREEN_BOTTOM_Y(_height),
@@ -12524,11 +12128,11 @@ class __dock__
                     _height,
                     duration
                 );
-                dock_menu.focus(); /** <- EDIT: */
-                /* dock_menu.raise(); */
+
+                dock_menu.focus();
             }
 
-            if (__state == MIN)
+            if (state == MIN)
             {
                 /* dock_menu.raise();
                 dock_menu.focus_input(); */
@@ -12543,7 +12147,7 @@ class __dock__
             }
         }
 
-        void create_window__()
+        void create_window_()
         {
             dock_menu.create_window(
                 screen->root,
@@ -12558,38 +12162,33 @@ class __dock__
             dock_search.init();
         }
 
-        void show__(uint32_t __window)
+        void show_(uint32_t window)
         {
-            if (__window == dock_menu)
+            if (window == dock_menu)
             {
                 if (wm->focused_client != nullptr)
                 {
                     f_c = wm->focused_client;
-                    /* wm->root.focus_input(); */
-                    wm->root.focus(); /** <- EDIT: */
+                    wm->root.focus();
                     wm->focused_client = nullptr;
                 }
 
                 dock_menu.map();
-                /* dock_menu.raise();
-                dock_menu.focus_input(); */
-                dock_menu.focus(); /** <- EDIT: */
-                anim_dock_menu(MAX);
-                /* dock_menu.raise();
-                dock_menu.focus_input(); */
-                dock_menu.focus(); /** <- EDIT: */
+                dock_menu.focus();
+                anim_dock_menu_(MAX);
+                dock_menu.focus();
                 dock_search.show();
             }
         }
 
-        void hide__(uint32_t __window)
+        void hide_(uint32_t window)
         {
-            if (__window == dock_menu)
+            if (window == dock_menu)
             {
-                anim_dock_menu(MIN);
+                anim_dock_menu_(MIN);
                 dock_menu.unmap();
 
-                if (f_c != nullptr)
+                if (f_c)
                 {
                     f_c->focus();
                     f_c = nullptr;
@@ -12601,31 +12200,11 @@ class __dock__
     /* Methods     */
         void init()
         {
-            create_window__();
+            create_window_();
 
-            /* event_handler->setEventCallback(EV_CALL(XCB_KEY_PRESS)
+            signal_manager->connect("HIDE_DOCK", [this]() -> void
             {
-                RE_CAST_EV(xcb_key_press_event_t);
-                if (e->detail == wm->key_codes.super_l)
-                {
-                    if (e->state == SHIFT)
-                    {
-                        if (dock_menu.is_mapped())
-                        {
-                            hide__(dock_menu);
-                        }
-                        else
-                        {
-                            show__(dock_menu);
-                        }
-                    }
-                }
-            }); */
-
-            signal_manager->connect("HIDE_DOCK",
-            [this]() -> void
-            {
-                hide__(dock_menu);
+                hide_(dock_menu);
             });
         }
 
@@ -12633,11 +12212,11 @@ class __dock__
         {
             if (dock_menu.is_mapped())
             {
-                hide__(dock_menu);
+                hide_(dock_menu);
             }
             else
             {
-                show__(dock_menu);
+                show_(dock_menu);
             }
         }
 
@@ -12650,7 +12229,7 @@ class __dock__
         __dock__() {}
 
 };
-static __dock__ *dock(nullptr);
+static __dock__* dock = nullptr;
 
 /****************************************
 **** @class @c DropDownTerm
