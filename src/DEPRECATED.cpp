@@ -757,4 +757,39 @@ XCB_KEY_PRESS,
     free(property_reply);
 } */
 
+/* void print_wm_class(xcb_connection_t* conn, xcb_window_t window)
+{
+    xcb_get_property_cookie_t cookie = xcb_get_property(conn, 0, window, XCB_ATOM_WM_CLASS, XCB_GET_PROPERTY_TYPE_ANY, 0, 1024);
+    xcb_get_property_reply_t* reply = xcb_get_property_reply(conn, cookie, NULL);
+
+    if (reply && xcb_get_property_value_length(reply) > 0)
+    {
+        // WM_CLASS property value is a null-separated string "instance\0class\0"
+        char* value = (char *)xcb_get_property_value(reply);
+        printf("WM_CLASS: %s\n", value); // Prints the instance name
+        printf("WM_CLASS: %s\n", value + strlen(value) + 1); // Prints the class name
+    }
+
+    free(reply);
+} */
+
+/* void print_icccm_wm_class()
+{
+    // Request WM_CLASS property
+    xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_class(conn, _window);
+    xcb_icccm_get_wm_class_reply_t wm_class_reply;
+
+    // Retrieve the WM_CLASS property
+    if (xcb_icccm_get_wm_class_reply(conn, cookie, &wm_class_reply, NULL))
+    {
+        loutIWin << "Instance Name: " << wm_class_reply.instance_name << '\n';
+        loutIWin << "Class Name: "    << wm_class_reply.class_name    << '\n';
+        xcb_icccm_get_wm_class_reply_wipe(&wm_class_reply);
+    }
+    else
+    {
+        loutEWin << "Failed to retrieve WM_CLASS for window" << '\n';
+    }
+} */
+
 /** <- END: */

@@ -5104,7 +5104,8 @@ class window
                     }
                 }
 
-                void get_window_size_hints() {
+                void get_window_size_hints()
+                {
                     xcb_size_hints_t hints;
                     memset(&hints, 0, sizeof(xcb_size_hints_t)); // Initialize hints structure
 
@@ -5142,7 +5143,7 @@ class window
                     }
                 }
 
-                void set_client_size_as_hints(int16_t *__x, int16_t *__y, uint16_t *__width, uint16_t *__height)
+                void set_client_size_as_hints(int16_t* x, int16_t* y, uint16_t* width, uint16_t* height)
                 {
                     xcb_size_hints_t hints;
                     
@@ -5164,21 +5165,21 @@ class window
                         return;
                     }
 
-                    if ( hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE )
+                    if (hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE)
                     {
                         _min_width  = hints.min_width;
                         _min_height = hints.min_height;
-                        *__x        = hints.x;
-                        *__y        = hints.y;
-                        *__width    = hints.width;
-                        *__height   = hints.height;
+                        *x          = hints.x;
+                        *y          = hints.y;
+                        *width      = hints.width;
+                        *height     = hints.height;
 
-                        if ( hints.width < hints.min_width )
+                        if (hints.width < hints.min_width)
                         {
                             loutE << "something went wrong hints.width" << hints.width << " is less then hints.min_width" << hints.min_width << '\n';
                         }
 
-                        if ( hints.height < hints.min_height )
+                        if (hints.height < hints.min_height)
                         {
                             loutE << "something went wrong hints.height" << hints.height << " is less then hints.min_height" << hints.min_height << '\n';
                         }
@@ -5193,7 +5194,9 @@ class window
             {
                 AutoTimer timer(__func__);
 
-                uint32_t t_for = 0; // Default to 0 (no parent)
+                // Default to 0 (no parent)
+                uint32_t t_for = 0;
+                
                 xcb_get_property_cookie_t cookie = xcb_get_property(conn, 0, _window, XCB_ATOM_WM_TRANSIENT_FOR, XCB_ATOM_WINDOW, 0, sizeof(uint32_t));
                 xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
                 if (reply && xcb_get_property_value_length(reply) == sizeof(uint32_t))
@@ -5209,12 +5212,12 @@ class window
             {
                 xcb_atom_t property = XCB_ATOM_NONE;
                 xcb_atom_t type = XCB_ATOM_CARDINAL;
-                xcb_intern_atom_cookie_t cookie = xcb_intern_atom(conn, 0, 11, "_NET_WM_PID");
-                xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(conn, cookie, NULL);
-                if (reply)
+                
+                iAtomC cookie{0, "_NET_WM_PID"};
+                iAtomR reply{cookie};
+                if (!reply.is_not_valid())
                 {
-                    property = reply->atom;
-                    free(reply);
+                    property = reply.Atom();
                 }
 
                 if (property == XCB_ATOM_NONE)
@@ -5282,6 +5285,7 @@ class window
                     windowName.assign(wm_name.strings, wm_name.strings_len);
                     xcb_ewmh_get_utf8_strings_reply_wipe(&wm_name);
                 }
+
                 _name = windowName;
                 return windowName;
             }
@@ -5289,39 +5293,6 @@ class window
             string get_net_wm_name() const
             {
                 return _name;
-            }
-
-            void print_wm_class(xcb_connection_t* conn, xcb_window_t window)
-            {
-                xcb_get_property_cookie_t cookie = xcb_get_property(conn, 0, window, XCB_ATOM_WM_CLASS, XCB_GET_PROPERTY_TYPE_ANY, 0, 1024);
-                xcb_get_property_reply_t* reply = xcb_get_property_reply(conn, cookie, NULL);
-
-                if (reply && xcb_get_property_value_length(reply) > 0)
-                {
-                    // WM_CLASS property value is a null-separated string "instance\0class\0"
-                    char* value = (char *)xcb_get_property_value(reply);
-                    printf("WM_CLASS: %s\n", value); // Prints the instance name
-                    printf("WM_CLASS: %s\n", value + strlen(value) + 1); // Prints the class name
-                }
-                free(reply);
-            }
-            
-            void print_icccm_wm_class()
-            {
-                xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_class(conn, _window); /* Request WM_CLASS property */
-                xcb_icccm_get_wm_class_reply_t wm_class_reply;
-
-                /* Retrieve the WM_CLASS property */
-                if (xcb_icccm_get_wm_class_reply(conn, cookie, &wm_class_reply, NULL))
-                {
-                    loutIWin << "Instance Name: " << wm_class_reply.instance_name << '\n';
-                    loutIWin << "Class Name: "    << wm_class_reply.class_name    << '\n';
-                    xcb_icccm_get_wm_class_reply_wipe(&wm_class_reply);
-                }
-                else
-                {
-                    loutEWin << "Failed to retrieve WM_CLASS for window" << '\n';
-                }
             }
             
             string get_icccm_class()
@@ -5344,18 +5315,21 @@ class window
                 return result;
             }
             
-            char *property(const char *atom_name)
+            char* property(const char* atom_name)
             {
-                unsigned int reply_len;
-                char * propertyValue;
+                uint32_t reply_len;
+                char* propertyValue;
 
-                xcb_get_property_reply_t *reply = xcb_get_property_reply(
+                xcb_get_property_reply_t *reply = xcb_get_property_reply
+                (
                     conn,
-                    xcb_get_property(
+                    xcb_get_property
+                    (
                         conn,
                         false,
                         _window,
-                        xcb->get_atom(
+                        xcb->get_atom
+                        (
                             1,
                             atom_name
                         ),
@@ -5366,19 +5340,20 @@ class window
                     nullptr
                 );
 
-                if (reply == nullptr || xcb_get_property_value_length(reply) == 0)
+                if (!reply || xcb_get_property_value_length(reply) == 0)
                 {
-                    if (reply != nullptr)
+                    if (reply)
                     {
                         loutE << "reply length for property(" << atom_name << ") = 0" << '\n';
                         free(reply);
                         return (char *) "";
                     }
+
                     loutE << "reply == nullptr" << loutEND;
                     return (char *) "";
                 }
-                reply_len = xcb_get_property_value_length(reply);
-                
+
+                reply_len = xcb_get_property_value_length(reply);                
                 propertyValue = static_cast<char *>(malloc(sizeof(char) * (reply_len + 1)));
                 memcpy(propertyValue, xcb_get_property_value(reply), reply_len);
                 propertyValue[reply_len] = '\0';
@@ -5388,6 +5363,7 @@ class window
                     free(reply);
                     loutI << "property(" << atom_name << ") = " << propertyValue << '\n';
                 }
+
                 return propertyValue;
             }
 
@@ -5600,9 +5576,9 @@ class window
                 xcb_flush(conn);
             }
 
-            void conf_checked(uint32_t __mask, const void *__data)
+            void conf_checked(uint32_t mask, const void* data)
             {
-                XCB::configure_window_checked(_window, __mask, __data);
+                XCB::configure_window_checked(_window, mask, data);
             }
 
             void conf_unchecked(uint32_t __mask, const void *__data)
@@ -5632,22 +5608,22 @@ class window
                         return _height;
                     }
 
-                    void geo(int16_t *__x = nullptr, int16_t *__y = nullptr, uint16_t *__width = nullptr, uint16_t *__height = nullptr)
+                    void geo(int16_t *x = nullptr, int16_t *y = nullptr, uint16_t *width = nullptr, uint16_t *height = nullptr)
                     {
                         AutoTimer timer(__func__);
 
                         xcb_get_geometry_cookie_t cookie = xcb_get_geometry_unchecked(conn, _window);
                         xcb_get_geometry_reply_t *reply = xcb_get_geometry_reply(conn, cookie, nullptr);
-                        if ( !reply )
+                        if (!reply)
                         {
                             loutEWin << "reply == nullptr" << '\n';
                             return;
                         }
 
-                        if (__x      != nullptr) *__x      = reply->x;
-                        if (__y      != nullptr) *__y      = reply->y;
-                        if (__width  != nullptr) *__width  = reply->width;
-                        if (__height != nullptr) *__height = reply->height;
+                        if (x      != nullptr) *x      = reply->x;
+                        if (y      != nullptr) *y      = reply->y;
+                        if (width  != nullptr) *width  = reply->width;
+                        if (height != nullptr) *height = reply->height;
 
                         free(reply);
                     }
