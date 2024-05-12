@@ -8561,9 +8561,11 @@ class context_menu
             context_window.x_y_width_height((_x - BORDER_SIZE), (_y - BORDER_SIZE), _width, new_height);
             context_window.map();
             context_window.focus();
+
             ConnSig(context_window, HIDE_CONTEXT_MENU,
                 hide__();
             );
+
             make_entries__();
         }
         
