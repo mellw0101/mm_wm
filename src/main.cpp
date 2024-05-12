@@ -4436,6 +4436,42 @@ class window
             
             }
 
+        /* Events        */
+            void highlight_on_hover(int enter_color = 0, int leave_color = 0)
+            {
+                // if (enter_color == 0) enter_color = WHITE;
+                // if (leave_color == 0) leave_color = BLACK;
+
+                // signal_manager->_window_signals.conect(_window, XCB_ENTER_NOTIFY, [this, enter_color]() -> void
+                // {
+                //     change_backround_color(enter_color);
+                // });
+
+                // signal_manager->_window_signals.conect(_window, XCB_LEAVE_NOTIFY, [this, leave_color]() -> void
+                // {
+                //     change_border_color(leave_color);
+                // });
+
+                ConnSig(_window, XCB_ENTER_NOTIFY,
+                    change_backround_color(WHITE);
+                );
+
+                ConnSig(_window, XCB_LEAVE_NOTIFY,
+                    change_backround_color(BLACK);
+                );
+            }
+
+            void highlight_border_on_hover()
+            {
+                ConnSig(_window, XCB_ENTER_NOTIFY,
+                    change_border_color(WHITE);
+                );
+
+                ConnSig(_window, XCB_LEAVE_NOTIFY,
+                    change_border_color(BLACK);
+                );
+            }
+
         /* Borders       */
             void make_borders(int __border_mask, uint32_t __size, int __color)
             {
@@ -4463,6 +4499,8 @@ class window
                 if (__border_mask & DOWN ) CHANGE_BORDER_COLOR(_border[1]);
                 if (__border_mask & LEFT ) CHANGE_BORDER_COLOR(_border[2]);
                 if (__border_mask & RIGHT) CHANGE_BORDER_COLOR(_border[3]);
+
+                xcb_flush(conn);
             }
             
             void make_xcb_borders(int __color)
@@ -6830,14 +6868,7 @@ class dialog_window
             );
 
             Emit(_yes_window, XCB_EXPOSE);
-
-            ConnSig(_yes_window, XCB_LEAVE_NOTIFY,
-                _yes_window.change_backround_color(BLACK);
-            );
-
-            ConnSig(_yes_window, XCB_ENTER_NOTIFY,
-                _yes_window.change_backround_color(WHITE);
-            );
+            _yes_window.highlight_on_hover();
             
             _no_window.create_window
             (
@@ -6868,14 +6899,7 @@ class dialog_window
             );
 
             Emit(_no_window, XCB_EXPOSE);
-
-            ConnSig(_no_window, XCB_LEAVE_NOTIFY,
-                _no_window.change_backround_color(BLACK);
-            );
-
-            ConnSig(_no_window, XCB_ENTER_NOTIFY,
-                _no_window.change_backround_color(WHITE);
-            );
+            _no_window.highlight_on_hover();
 
             signal_manager->_window_signals.emit(screen->root, XCB_MAP_REQUEST, _win);
         }
@@ -7077,6 +7101,8 @@ class client
                 border[bottom_left].kill();
                 border[bottom_right].kill();
                 frame.kill();
+
+                xcb_flush(conn);
             }
 
             void align()
@@ -7921,7 +7947,8 @@ class client
                 (int[]){ALL, 1, BLACK},
                 CURSOR::hand2
             );
-            XCB::flush();
+            
+            xcb_flush(conn);
             CWC(close_button);
             close_button.make_then_set_png(USER_PATH_PREFIX("/close.png"), CLOSE_BUTTON_BITMAP);
             close_button.grab_button({{L_MOUSE_BUTTON, NULL}});
@@ -7930,21 +7957,11 @@ class client
                 if (!win.is_mapped())
                 {
                     kill();
-                    xcb_flush(conn);
                 }
                 win.kill_test();
-                xcb_flush(conn);
             );
 
-            ConnSig(close_button, XCB_ENTER_NOTIFY,
-                close_button.change_border_color(WHITE);
-                XCB::flush();   
-            );
-
-            ConnSig(close_button, XCB_LEAVE_NOTIFY,
-                close_button.change_border_color(BLACK);
-                XCB::flush();
-            );
+            close_button.highlight_border_on_hover();
         }
         
         void make_max_button()
@@ -8000,15 +8017,7 @@ class client
                 XCB::flush();
             );
 
-            ConnSig(max_button, XCB_ENTER_NOTIFY,
-                max_button.change_border_color(WHITE);
-                XCB::flush();
-            );
-
-            ConnSig(max_button, XCB_LEAVE_NOTIFY,
-                max_button.change_border_color(BLACK);
-                XCB::flush();
-            );
+            max_button.highlight_border_on_hover();
         }
         
         void make_min_button()
