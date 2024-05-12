@@ -3053,18 +3053,22 @@ class Launcher
 {
     public:
     /* Methods   */
-        int program(char *program) {
-            if (!file.check_if_binary_exists(program)) {
+        int program(char *program)
+        {
+            if (!file.check_if_binary_exists(program))
+            {
                 return 1;
-
             }
-            if (fork() == 0) {
+            
+            if (fork() == 0)
+            {
                 setsid();
                 execvp(program, (char *[]) { program, NULL });
-
-            } return 0;
-
+            }
+            
+            return 0;
         }
+
         int launch_child_process(const char *command)
         {
             AutoTimer t(__func__);
@@ -3091,9 +3095,10 @@ class Launcher
                 loutErrno("posix_spawn failed");
                 return result;
             }
-
         }
-        static int static_launch_child_process(const char *command) {
+
+        static int static_launch_child_process(const char* command)
+        {
             pid_t pid;
             posix_spawnattr_t attr;
 
@@ -3106,16 +3111,16 @@ class Launcher
             int result = posix_spawn(&pid, command_path.c_str(), NULL, &attr, argv, environ);
             posix_spawnattr_destroy(&attr);
 
-            if (result == 0) {
+            if (result == 0)
+            {
                 pid_manager->add_pid(pid);
                 return 0;
-
-            } else {
+            }
+            else
+            {
                 loutErrno("posix_spawn failed");
                 return result;
-
             }
-
         }
     
     private:
@@ -4437,21 +4442,8 @@ class window
             }
 
         /* Events        */
-            void highlight_on_hover(int enter_color = 0, int leave_color = 0)
+            void highlight_on_hover()
             {
-                // if (enter_color == 0) enter_color = WHITE;
-                // if (leave_color == 0) leave_color = BLACK;
-
-                // signal_manager->_window_signals.conect(_window, XCB_ENTER_NOTIFY, [this, enter_color]() -> void
-                // {
-                //     change_backround_color(enter_color);
-                // });
-
-                // signal_manager->_window_signals.conect(_window, XCB_LEAVE_NOTIFY, [this, leave_color]() -> void
-                // {
-                //     change_border_color(leave_color);
-                // });
-
                 ConnSig(_window, XCB_ENTER_NOTIFY,
                     change_backround_color(WHITE);
                 );
@@ -4470,6 +4462,17 @@ class window
                 ConnSig(_window, XCB_LEAVE_NOTIFY,
                     change_border_color(BLACK);
                 );
+            }
+
+            void draw_on_expose(const string& str)
+            {
+                _name = str;
+
+                ConnSig(_window, XCB_EXPOSE,
+                    draw_acc_16(_name.c_str());
+                );
+
+                Emit(_window, XCB_EXPOSE);
             }
 
         /* Borders       */
@@ -6808,6 +6811,12 @@ class window
             }
 };
 
+
+/*********************************************************************
+*****************<<    @class @c dialog_window    >>******************
+*********************************************************************/
+
+
 class dialog_window
 {
     private:
@@ -8406,21 +8415,9 @@ class Entry
         {
             AutoTimer t("Entry:make_window");
 
-            window.create_window
-            (
-                parent,
-                x,
-                y,
-                width,
-                height,
-                BLACK,
-                BUTTON_EVENT_MASK,
-                MAP
-            );
-
-            ConnSig(window, XCB_EXPOSE,
-                window.draw_acc(name.c_str());
-            );
+            window.create_window(parent, x, y, width, height, BLACK, BUTTON_EVENT_MASK, MAP);
+            window.draw_on_expose(name);
+            window.highlight_on_hover();
 
             ConnSig(window, L_MOUSE_BUTTON_EVENT,
                 Emit(window.parent(), HIDE_CONTEXT_MENU);
@@ -8429,14 +8426,6 @@ class Entry
 
             ConnSig(window, R_MOUSE_BUTTON_EVENT,
                 Emit(window.parent(), HIDE_CONTEXT_MENU);
-            );
-            
-            ConnSig(window, XCB_ENTER_NOTIFY,
-                window.change_backround_color(WHITE);
-            );
-
-            ConnSig(window, XCB_LEAVE_NOTIFY,
-                window.change_backround_color(BLACK);
             );
 
             window.grab_button
@@ -9954,7 +9943,38 @@ class __status_bar__
                 MAP
             );
 
-            // _w[SHUTDOWN_DROPDOWN].create_window(screen->root, int16_t x, int16_t y, uint16_t width, uint16_t height)
+            _w[SHUTDOWN_DROPDOWN].create_window(screen->root, 0, 0, 100, 60, BLACK);
+
+            ConnSig(_w[SHUTDOWN], L_MOUSE_BUTTON_EVENT,
+                if (_w[SHUTDOWN_DROPDOWN].is_mapped())
+                {
+                    _w[SHUTDOWN_DROPDOWN].unmap();
+                }
+                else
+                {
+                    _w[SHUTDOWN_DROPDOWN].map();
+                }
+            );
+
+            _w[SHUTDOWN_NOW].create_window(_w[SHUTDOWN_DROPDOWN], 0, 0, 100, 20, BLACK, BUTTON_EVENT_MASK, MAP);
+            _w[SHUTDOWN_NOW].draw_on_expose("Shutdown");
+            _w[SHUTDOWN_NOW].highlight_on_hover();
+            
+            ConnSig(_w[SHUTDOWN_NOW], L_MOUSE_BUTTON_EVENT,
+                wm->launcher.launch_child_process("sudo shutdown now");
+            );
+
+            _w[SHUTDOWN_REBOOT].create_window(_w[SHUTDOWN_DROPDOWN], 0, 20, 100, 20, BLACK, BUTTON_EVENT_MASK, MAP);
+            _w[SHUTDOWN_REBOOT].draw_on_expose("Reboot");
+            _w[SHUTDOWN_REBOOT].highlight_on_hover();
+
+            ConnSig(_w[SHUTDOWN_REBOOT], L_MOUSE_BUTTON_EVENT,
+                wm->launcher.launch_child_process("sudo reboot");
+            );
+
+            _w[SHUTDOWN_SLEEP].create_window(_w[SHUTDOWN_DROPDOWN], 0, 40, 100, 20, BLACK, BUTTON_EVENT_MASK, MAP);
+            _w[SHUTDOWN_SLEEP].draw_on_expose("Sleep");
+            _w[SHUTDOWN_SLEEP].highlight_on_hover();
         }
 
         void show_(uint32_t window)
@@ -10099,7 +10119,7 @@ class __status_bar__
             return string(buf);
         }
 
-        FixedArray<window, 9> _w{};
+        FixedArray<window, 13> _w{};
         typedef enum {
             _BAR,
             _TIME_DATE,
@@ -10109,7 +10129,11 @@ class __status_bar__
             _WIFI_INFO,
             _AUDIO,
             _AUDIO_DROPDOWN,
-            SHUTDOWN
+            SHUTDOWN,
+            SHUTDOWN_DROPDOWN,
+            SHUTDOWN_NOW,
+            SHUTDOWN_REBOOT,
+            SHUTDOWN_SLEEP
         } window_type_t;
 
         void init()
