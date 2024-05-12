@@ -641,14 +641,14 @@ namespace // Tools
         // };
     }
 
-    void pop_last_ss(stringstream &__ss)
+    void pop_last_ss(stringstream& ss)
     {
-        if (__ss.str().length() > 0)
+        if (ss.str().length() > 0)
         {
-            string temp = __ss.str();
+            string temp = ss.str();
             temp.pop_back();
-            __ss.str("");
-            __ss << temp;
+            ss.str("");
+            ss << temp;
         }
     }
 
@@ -667,7 +667,6 @@ namespace // Tools
             return false;
         }
     }
-
 }
 
 namespace
@@ -3255,7 +3254,7 @@ class __key_codes__
 };
 
 static void buttonPressH(const xcb_generic_event_t *ev);
-static void keyPressH(const xcb_generic_event_t *ev);
+static void keyPressH(xcb_generic_event_t *ev);
 
 /**
 *****************************************
@@ -4199,16 +4198,6 @@ class __color_bitmap__
             png_destroy_write_struct(&png_ptr, &info_ptr);
         }
 
-};
-
-class _scale
-{
-    public:
-    /* Methods */
-        static uint16_t from_8_to_16_bit(const uint8_t & n)
-        {
-            return (n << 8) | n;
-        }
 };
 
 namespace // 'window' class Namespace
@@ -6841,34 +6830,20 @@ class client
         };
 
     /* Variabels   */
-        window win;
-        window frame;
-        window titlebar;
-        window close_button;
-        window max_button;
-        window min_button;
-        window icon;
+        window win, frame, titlebar, close_button, max_button, min_button, icon;
 
+        size_pos ogsize, tile_ogsize, max_ewmh_ogsize, max_button_ogsize;
+        
         client_border_decor border;
         __atoms__ atoms;
         __modal_data__ modal_data;
 
         int16_t x, y;     
-        uint16_t width,height;
+        uint16_t width, height;
         uint8_t  depth;
-        
-        size_pos ogsize;
-        size_pos tile_ogsize;
-        size_pos max_ewmh_ogsize;
-        size_pos max_button_ogsize;
+
         uint16_t desktop;
         pid_t pid;
-        bool moving = false;
-        mutex mtx;
-        /* ThreadPool thread_pool{8}; */
-        
-        uint64_t bit_state = 0xffffffffffffffff;
-        vector<pair<uint8_t, int>> ev_id_vec;
 
     /* Methods     */
         /* Main      */
@@ -6887,11 +6862,6 @@ class client
                     make_borders();
                 }
             }
-            
-            /* void raise()
-            {
-                frame.raise();
-            } */
             
             void focus()
             {
@@ -6969,11 +6939,6 @@ class client
                 border[bottom_left].kill();
                 border[bottom_right].kill();
                 frame.kill();
-
-                for (int i = 0; i < ev_id_vec.size(); ++i)
-                {
-                    event_handler->removeEventCallback( ev_id_vec[i].first, ev_id_vec[i].second );
-                }
             }
 
             void align()
@@ -6985,159 +6950,21 @@ class client
 
             #define TITLE_REQ_DRAW  (uint32_t)1 << 0
             #define TITLE_INTR_DRAW (uint32_t)1 << 1
-            void draw_title(uint32_t __mode)
+            void draw_title(uint32_t mode)
             {
                 titlebar.clear();
 
-                if (__mode & TITLE_REQ_DRAW)
+                if (mode & TITLE_REQ_DRAW)
                 {
                     titlebar.draw_acc_16(win.get_net_wm_name_by_req().c_str());
                 }
 
-                if (__mode & TITLE_INTR_DRAW)
+                if (mode & TITLE_INTR_DRAW)
                 {
                     titlebar.draw_acc_16(win.get_net_wm_name().c_str());
                 }
             }
-            
-            #define CLI_RIGHT  screen->width_in_pixels  - this->width
-            #define CLI_BOTTOM screen->height_in_pixels - this->height
-            /** @brief client to client snaping */
-            void snap(int x, int y, const vector<client *> &__vec)
-            {
-                /* WINDOW TO WINDOW SNAPPING */
-                for (client *const &c : __vec)
-                {
-                    if (c == this) continue;
-                    
-                    /* SNAP WINDOW TO 'RIGHT' BORDER OF 'NON_CONTROLLED' WINDOW */
-                    if (x > c->x + c->width - N && x < c->x + c->width + N
-                    &&  y + this->height > c->y && y < c->y + c->height)
-                    {    
-                        /* SNAP WINDOW TO 'RIGHT_TOP' CORNER OF NON_CONROLLED WINDOW WHEN APPROPRIET */
-                        if (y > c->y - NC && y < c->y + NC)
-                        {
-                            this->frame.x_y((c->x + c->width), c->y);
-                            return;
-                        }
-                        
-                        /* SNAP WINDOW TO 'RIGHT_BOTTOM' CORNER OF NON_CONROLLED WINDOW WHEN APPROPRIET */
-                        if (y + this->height > c->y + c->height - NC && y + this->height < c->y + c->height + NC)
-                        {
-                            this->frame.x_y((c->x + c->width), (c->y + c->height) - this->height);
-                            return;
-                        }
-                        
-                        this->frame.x_y((c->x + c->width), y);
-                        return;
-                    }
-                    
-                    /* SNAP WINDOW TO 'LEFT' BORDER OF 'NON_CONTROLLED' WINDOW */
-                    if (x + this->width > c->x - N && x + this->width < c->x + N
-                    &&  y + this->height > c->y && y < c->y + c->height)
-                    {
-                        /* SNAP WINDOW TO 'LEFT_TOP' CORNER OF NON_CONROLLED WINDOW WHEN APPROPRIET */
-                        if (y > c->y - NC && y < c->y + NC)
-                        {
-                            this->frame.x_y((c->x - this->width), c->y);
-                            return;
-                        }
-                        
-                        /* SNAP WINDOW TO 'LEFT_BOTTOM' CORNER OF NON_CONROLLED WINDOW WHEN APPROPRIET */
-                        if (y + this->height > c->y + c->height - NC && y + this->height < c->y + c->height + NC)
-                        {
-                            this->frame.x_y((c->x - this->width), (c->y + c->height) - this->height);
-                            return;
-                        }
-                        
-                        this->frame.x_y((c->x - this->width), y);
-                        return;
-                    }
 
-                    /* SNAP WINDOW TO 'BOTTOM' BORDER OF 'NON_CONTROLLED' WINDOW */
-                    if (y > c->y + c->height - N && y < c->y + c->height + N 
-                    &&  x + this->width > c->x && x < c->x + c->width)
-                    {
-                        /* SNAP WINDOW TO 'BOTTOM_LEFT' CORNER OF NON_CONROLLED WINDOW WHEN APPROPRIET */
-                        if (x > c->x - NC && x < c->x + NC)
-                        {
-                            this->frame.x_y(c->x, (c->y + c->height));
-                            return;
-                        }
-                        
-                        /* SNAP WINDOW TO 'BOTTOM_RIGHT' CORNER OF NON_CONROLLED WINDOW WHEN APPROPRIET */
-                        if (x + this->width > c->x + c->width - NC && x + this->width < c->x + c->width + NC)
-                        {
-                            this->frame.x_y(((c->x + c->width) - this->width), (c->y + c->height));
-                            return;
-                        }
-                        
-                        this->frame.x_y(x, (c->y + c->height));
-                        return;
-                    }
-                    
-                    /* SNAP WINDOW TO 'TOP' BORDER OF 'NON_CONTROLLED' WINDOW */
-                    if (y + this->height > c->y - N && y + this->height < c->y + N     
-                    &&  x + this->width > c->x && x < c->x + c->width)
-                    {
-                        /* SNAP WINDOW TO 'TOP_LEFT' CORNER OF NON_CONROLLED WINDOW WHEN APPROPRIET */
-                        if (x > c->x - NC && x < c->x + NC)
-                        {
-                            this->frame.x_y(c->x, (c->y - this->height));
-                            return;
-                        }
-                        
-                        /* SNAP WINDOW TO 'TOP_RIGHT' CORNER OF NON_CONROLLED WINDOW WHEN APPROPRIET */
-                        if (x + this->width > c->x + c->width - NC && x + this->width < c->x + c->width + NC)
-                        {
-                            this->frame.x_y(((c->x + c->width) - this->width), (c->y - this->height));
-                            return;
-                        }
-                        
-                        this->frame.x_y(x, (c->y - this->height));
-                        return;
-                    }
-                }
-
-                /* WINDOW TO EDGE OF SCREEN SNAPPING */
-                if        (((x < N) && (x > -N)) && ((y < N) && (y > -N)))
-                {
-                    this->frame.x_y(0, 0);
-                }
-                else if  ((x < CLI_RIGHT + N && x > CLI_RIGHT - N) && (y < N && y > -N))
-                {
-                    this->frame.x_y(CLI_RIGHT, 0);
-                }
-                else if  ((y < CLI_BOTTOM + N && y > CLI_BOTTOM - N) && (x < N && x > -N))
-                {
-                    this->frame.x_y(0, CLI_BOTTOM);
-                }
-                else if  ((x < N) && (x > -N))
-                {
-                    this->frame.x_y(0, y);
-                }
-                else if   (y < N && y > -N)
-                {
-                    this->frame.x_y(x, 0);
-                }
-                else if  ((x < CLI_RIGHT + N && x > CLI_RIGHT - N) && (y < CLI_BOTTOM + N && y > CLI_BOTTOM - N))
-                {
-                    this->frame.x_y(CLI_RIGHT, CLI_BOTTOM);
-                }
-                else if  ((x < CLI_RIGHT + N) && (x > CLI_RIGHT - N))
-                {
-                    this->frame.x_y(CLI_RIGHT, y);
-                }
-                else if   (y < CLI_BOTTOM + N && y > CLI_BOTTOM - N)
-                {
-                    this->frame.x_y(x, CLI_BOTTOM);    
-                }
-                else
-                {
-                    this->frame.x_y(x, y);
-                }
-            }
-            
         
         /* Config    */
             void x_y(uint32_t __x, uint32_t __y)
@@ -7859,27 +7686,6 @@ class client
             {
                 win.unset_EWMH_fullscreen_state();
             }
-
-        /* Bit State */
-            bool check_bit( uint8_t __pos )
-            {
-                return ((this->bit_state & (1ULL << __pos)) != 0);
-            }
-
-            void set_bit( uint8_t __pos )
-            {
-                bit_state |= (1ULL << __pos);
-            }
-            
-            void clear_bit( uint8_t __pos )
-            {
-                bit_state &= ~(1ULL << __pos);
-            }
-            
-            void flip_bit( uint8_t __pos )
-            {
-                bit_state ^= ( 1ULL << __pos );
-            }
     
     private:
     /* Methods     */
@@ -8126,7 +7932,7 @@ class client
                 nullptr,
                 CURSOR::left_side
             );
-            XCB::flush();
+            xcb_flush(conn);
 
             CWC(border[left]);
             border[left].grab_button({{L_MOUSE_BUTTON, NULL}});
@@ -8275,7 +8081,8 @@ class client
                 NONE,
                 MAP
             );
-            XCB::flush();
+
+            xcb_flush(conn);
 
             CWC(icon);
             win.make_png_from_icon();
@@ -8327,6 +8134,12 @@ class desktop
         uint16_t height;
 
 };
+
+
+/*********************************************************************
+*****************<<      @class @c Key_Codes      >>******************
+*********************************************************************/
+
 
 class Key_Codes
 {
@@ -8464,7 +8277,7 @@ class Entry
 
             ConnSig(window, L_MOUSE_BUTTON_EVENT,
                 Emit(window.parent(), HIDE_CONTEXT_MENU);
-                if (action != nullptr) action();
+                if (action) action();
             );
 
             ConnSig(window, R_MOUSE_BUTTON_EVENT,
@@ -8492,6 +8305,17 @@ class Entry
 *********************************************************************/
 
 
+namespace
+{
+    #define CONTEXT_MENU_EVENT_MASK \
+        XCB_EVENT_MASK_FOCUS_CHANGE | \
+        XCB_EVENT_MASK_ENTER_WINDOW | \
+        XCB_EVENT_MASK_LEAVE_WINDOW | \
+        XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | \
+        XCB_EVENT_MASK_POINTER_MOTION
+}
+
+
 class context_menu
 {
     private:
@@ -8513,7 +8337,7 @@ class context_menu
                 _width,
                 _height,
                 DARK_GREY,
-                XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_POINTER_MOTION,
+                CONTEXT_MENU_EVENT_MASK,
                 RAISE
             );
 
@@ -8590,7 +8414,7 @@ class context_menu
             make_entries_();
         }
         
-        void add_entry(string name, function<void()> action)
+        void add_entry(const string& name, function<void()> action)
         {
             Entry entry;
             entry.name = name;
@@ -9639,7 +9463,7 @@ class __wifi__
         __wifi__() {}
 
 };
-static __wifi__ *wifi(nullptr);
+static __wifi__* wifi = nullptr;
 
 
 /*********************************************************************
@@ -10133,7 +9957,7 @@ class __status_bar__
 
     __status_bar__() {}
 };
-static __status_bar__ *status_bar(nullptr);
+static __status_bar__* status_bar = nullptr;
 
 
 /*********************************************************************
@@ -10995,91 +10819,11 @@ void animate_client(client *const &c, int endX, int endY, int endWidth, int endH
     c->update();
 }
 
-/* class add_app_dialog_window
-{
-    public:
-    // Variables.
-        window main_window;
-        search_window search_window;
-        client *c;
-        buttons buttons;
-        pointer pointer;
-    
-    // Methods.
-        void init()
-        {
-            create();
-            configure_events();
-        }
 
-        void show()
-        {
-            create_client();
-            search_window.create(
-                main_window,
-                DOCK_BORDER,
-                DOCK_BORDER,
-                (main_window.width() - (DOCK_BORDER * 2)),
-                20
-            );
-            search_window.init();
-        }
+/*********************************************************************
+*****************<<     @class @c __file_app__    >>******************
+*********************************************************************/
 
-        void add_enter_action(function<void()> enter_action)
-        {
-            enter_function = enter_action;
-        }
-    
-    private:
-    // Methods.
-        void hide()
-        {
-            wm->send_sigterm_to_client(c);
-        }
-
-        void create()
-        {
-            main_window.create_window(screen->root, pointer.x(), pointer.y(), 300, 200);
-            uint32_t mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-            main_window.apply_event_mask(& mask);
-            main_window.grab_button({
-                { L_MOUSE_BUTTON, NULL }
-            });
-
-            main_window.grab_keys({ { Q, SHIFT | ALT } });
-            main_window.set_backround_color(DARK_GREY);
-        }
-
-        void create_client()
-        {
-            main_window.x_y(
-                pointer.x() - (main_window.width() / 2),
-                pointer.y() - (main_window.height() / 2)
-            );
-            c = wm->make_internal_client(main_window);
-            c->x_y(
-                (pointer.x() - (c->width / 2)),
-                (pointer.y() - (c->height / 2))
-            );
-            main_window.map();
-            c->map();
-        }
-
-        void configure_events()
-        {
-            event_handler->setEventCallback(XCB_BUTTON_PRESS, [&](Ev ev)-> void
-            {
-                const xcb_button_press_event_t * e = reinterpret_cast<const xcb_button_press_event_t *>(ev);
-                if (e->event == search_window.main_window)
-                {
-                    c->focus();
-                }
-            });
-        }
-
-    // Variabels.
-        function<void()> enter_function;
-}; */
 
 class __file_app__
 {
@@ -11308,6 +11052,12 @@ class __file_app__
         __file_app__() {}
 };
 static __file_app__ *file_app;
+
+
+/*********************************************************************
+*****************<< @class @c __screen_settings__ >>******************
+*********************************************************************/
+
 
 class __screen_settings__
 {
@@ -11756,137 +11506,11 @@ class __screen_settings__
 };
 static __screen_settings__ *screen_settings(nullptr);
 
-/** NOTE: DEPRECATED */
-/* class Dock
-{
-    public:
-    // Constructor.
-        Dock() {}
-        
-    // Variabels.
-        context_menu(context_menu);
-        window(main_window);
-        buttons(buttons);
-        uint32_t x = 0, y = 0, width = 48, height = 48;
-        add_app_dialog_window(add_app_dialog_window);
-    
-    // Methods.
-        void init()
-        {
-            main_window.create_window(screen->root, 0, 0, width, height);
-            setup_dock();
-            configure_context_menu();
-            make_apps();
-            add_app_dialog_window.init();
-            add_app_dialog_window.search_window.add_enter_action([this]()-> void
-            {
-                launcher.program((char *) add_app_dialog_window.search_window.search_string.c_str());
-            });
 
-            configure_events();
-        }
+/*********************************************************************
+*****************<<   @class @c __dock_search__   >>******************
+*********************************************************************/
 
-        void add_app(const char *app_name)
-        {
-            if (!file.check_if_binary_exists(app_name)) return;
-            apps.push_back(app_name);
-        }
-
-    private:
-    // Variables.
-        vector<const char *>(apps);
-        Launcher(launcher);
-        Logger(log);
-        File(file);
-        
-    // Methods.
-        void calc_size_pos()
-        {
-            int num_of_buttons(buttons.size());
-            if (num_of_buttons == 0) num_of_buttons = 1;
-
-            uint32_t calc_width = width * num_of_buttons;
-            x = ((screen->width_in_pixels / 2) - (calc_width / 2));
-            y = (screen->height_in_pixels - height);
-
-            main_window.x_y_width_height(x, y, calc_width, height);
-            xcb_flush(conn);
-        }
-
-        void setup_dock()
-        {
-            main_window.grab_button({
-                { R_MOUSE_BUTTON, NULL }
-            });
-
-            main_window.set_backround_color(DARK_GREY);
-            calc_size_pos();
-            main_window.map();
-        }
-
-        void configure_context_menu()
-        {
-            context_menu.add_entry("Add app", [this]()-> void
-            {
-                add_app_dialog_window.show();
-            });
-
-            context_menu.add_entry("test with nullptr", nullptr);
-            context_menu.add_entry("test with nullptr", nullptr);
-            context_menu.add_entry("test with nullptr", nullptr);
-            context_menu.add_entry("test with nullptr", nullptr);
-            context_menu.add_entry("test with nullptr", nullptr);
-        }
-
-        void make_apps()
-        {
-            for (const char *app : apps)
-            {
-                buttons.add(app, [app, this]()-> void
-                {
-                    launcher.program((char *) app);
-                });
-
-                buttons.list[buttons.index()].create(
-                    main_window,
-                    ((buttons.index() * width) + DOCK_BORDER),
-                    DOCK_BORDER,
-                    (width - (DOCK_BORDER * 2)),
-                    (height - (DOCK_BORDER * 2)),
-                    BLACK
-                );
-                buttons.list[buttons.index()].put_icon_on_button();
-            }
-
-            calc_size_pos();
-        }
-
-        void configure_events()
-        {
-            event_handler->setEventCallback(XCB_BUTTON_PRESS, [&](Ev ev)-> void
-            {
-                const auto *e = reinterpret_cast<const xcb_button_press_event_t *>(ev);
-                if (e->event == main_window)
-                {
-                    if (e->detail == R_MOUSE_BUTTON)
-                    {
-                        context_menu.show();
-                    }
-                }
-
-                for (int i = 0; i < buttons.size(); ++i)
-                {
-                    if (e->event == buttons.list[i].window)
-                    {
-                        if (e->detail == L_MOUSE_BUTTON)
-                        {
-                            buttons.list[i].activate();
-                        }
-                    }
-                }
-            }); 
-        }
-}; */
 
 class __dock_search__
 {
@@ -12096,6 +11720,12 @@ class __dock_search__
         }
 };
 
+
+/*********************************************************************
+*****************<<       @class @c __dock__      >>******************
+*********************************************************************/
+
+
 class __dock__
 {
     private:
@@ -12231,9 +11861,12 @@ class __dock__
 };
 static __dock__* dock = nullptr;
 
-/****************************************
-**** @class @c DropDownTerm
-****************************************/
+
+/*********************************************************************
+*****************<<     @class @c DropDownTerm    >>******************
+*********************************************************************/
+
+
 class DropDownTerm
 {
     /* Defines   */
@@ -12357,7 +11990,13 @@ class DropDownTerm
             );
         }
 };
-static DropDownTerm *ddTerm(nullptr);
+static DropDownTerm* ddTerm = nullptr;
+
+
+/*********************************************************************
+*****************<<      @class @c mv_client      >>******************
+*********************************************************************/
+
 
 class mv_client
 {
@@ -12584,12 +12223,19 @@ class mv_client
         }
 };
 
+
+/*********************************************************************
+*****************<<   @class @c change_desktop    >>******************
+*********************************************************************/
+
+
 mutex mtx;
 class change_desktop
 {
     public:
     /* Constructor */
-        change_desktop(xcb_connection_t *connection) {}
+        change_desktop()
+        {}
 
     /* Variabels   */
         int duration = 100;
@@ -12601,7 +12247,7 @@ class change_desktop
         };
 
     /* Methods     */
-        void change_to(const DIRECTION &direction)
+        void change_to(DIRECTION direction)
         {
             switch (direction)
             {
@@ -12682,7 +12328,7 @@ class change_desktop
             /* mtx.unlock(); */
         }
 
-        void change_with_app(const DIRECTION &direction)
+        void change_with_app(DIRECTION direction)
         {
             if (wm->focused_client == nullptr) return;
 
@@ -12747,7 +12393,7 @@ class change_desktop
             mtx.unlock();
         }
 
-        static void teleport_to(const uint8_t & n)
+        static void teleport_to(uint8_t n)
         {
             if (wm->cur_d == wm->desktop_list[n - 1]
             ||  n == 0
@@ -12779,19 +12425,20 @@ class change_desktop
     
     private:
     /* Variabels   */
-        // xcb_connection_t(*connection);
-        vector<client *> show;
-        vector<client *> hide;
+        vector<client*> show;
+        vector<client*> hide;
+        
         thread show_thread;
         thread hide_thread;
+        
         atomic<bool>(stop_show_flag){false};
         atomic<bool>(stop_hide_flag){false};
         atomic<bool>(reverse_animation_flag){false};
+        
         vector<thread> animation_threads;
 
     /* Methods     */
-        vector<client *>
-        get_clients_on_desktop(const uint8_t &desktop)
+        vector<client*> get_clients_on_desktop(uint8_t desktop)
         {
             vector<client *>(clients);
             for (client *const &c : wm->client_list)
@@ -12812,8 +12459,7 @@ class change_desktop
             return clients;
         }
 
-        vector<client *>
-        get_clients_on_desktop_with_app(const uint8_t &desktop)
+        vector<client*> get_clients_on_desktop_with_app(uint8_t desktop)
         {
             vector<client *>(clients);
             for (client *const &c : wm->client_list)
@@ -12829,8 +12475,7 @@ class change_desktop
             return clients;
         }
 
-        void
-        animate(vector<client *> clients, const DIRECTION &direction)
+        void animate(vector<client*> clients, DIRECTION direction)
         {
             switch (direction)
             {
@@ -12862,8 +12507,7 @@ class change_desktop
             }
         }
 
-        void
-        anim_cli(client *c, const int &endx)
+        void anim_cli(client* c, int endx)
         {
             if (c == nullptr) return;
  
@@ -12876,15 +12520,13 @@ class change_desktop
             c->update();
         }
 
-        void
-        thread_sleep(const double &milliseconds)
+        void thread_sleep(const double &milliseconds)
         {
             auto duration = chrono::duration<double, milli>(milliseconds);
             this_thread::sleep_for(duration);
         }
 
-        void
-        stopAnimations()
+        void stopAnimations()
         {
             stop_show_flag.store(true);
             stop_hide_flag.store(true);
@@ -12902,8 +12544,7 @@ class change_desktop
             }
         }
 
-        void
-        joinAndClearThreads()
+        void joinAndClearThreads()
         {
             for (thread &t : animation_threads)
             {
@@ -12922,6 +12563,12 @@ class change_desktop
             vector<client *>().swap(hide);
         }
 };
+
+
+/*********************************************************************
+*****************<<    @class @c resize_client    >>******************
+*********************************************************************/
+
 
 class resize_client
 {
@@ -13818,6 +13465,12 @@ class resize_client
         }
 };
 
+
+/*********************************************************************
+*****************<<       @class @c max_win       >>******************
+*********************************************************************/
+
+
 class max_win
 {
     private:
@@ -13973,36 +13626,43 @@ class max_win
         }
 };
 
+
+/*********************************************************************
+*****************<<        @class @c tile         >>******************
+*********************************************************************/
+
+
 /**
- *
- * @class tile
- * @brief Represents a tile obj.
- * 
- * The `tile` class is responsible for managing the tiling behavior of windows in the window manager.
- * It provides methods to tile windows to the left, right, *up, or *down positions on the screen.
- * The class also includes helper methods to check the current tile position of a window and set the size and position of a window.
- *
- */
+ 
+    @class tile
+    @brief Represents a tile obj.
+  
+    The `tile` class is responsible for managing the tiling behavior of windows in the window manager.
+    It provides methods to tile windows to the left, right, *up, or *down positions on the screen.
+    The class also includes helper methods to check the current tile position of a window and set the size and position of a window.
+ 
+*/
 class tile
 {
     private:
     /* Variabels   */
-        client(*c);
+        client* c;
 
     /* Methods     */
+        
         /**
-         *
-         * @brief Checks if the current tile position of a window is the specified tile position.
-         *
-         * This method checks if the current tile position of a window is the specified tile position.
-         * It takes a `TILEPOS` enum value as an argument, which specifies the tile position to check.
-         * The method returns `true` if the current tile position is the specified tile position, and `false` otherwise.
-         *
-         * @param mode The tile position to check.
-         * @return true if the current tile position is the specified tile position.
-         * @return false if the current tile position is not the specified tile position.
-         *
-         */
+
+            @brief Checks if the current tile position of a window is the specified tile position.
+
+            This method checks if the current tile position of a window is the specified tile position.
+            It takes a `TILEPOS` enum value as an argument, which specifies the tile position to check.
+            The method returns `true` if the current tile position is the specified tile position, and `false` otherwise.
+
+            @param mode The tile position to check.
+            @return true if the current tile position is the specified tile position.
+            @return false if the current tile position is not the specified tile position.
+
+        */
         bool current_tile_pos(TILEPOS mode)
         {
             switch (mode)
@@ -14090,16 +13750,16 @@ class tile
         }
 
         /**
-         *
-         * @brief Sets the size and position of a window to a specific tile position.
-         *
-         * This method sets the size and position of a window to a specific tile position.
-         * It takes a `TILEPOS` enum value as an argument, which specifies the tile position to set.
-         * The method uses the `animate` method to animate the window to the specified tile position.
-         *
-         * @param sizepos The tile position to set.
-         *
-         */
+
+            @brief Sets the size and position of a window to a specific tile position.
+
+            This method sets the size and position of a window to a specific tile position.
+            It takes a `TILEPOS` enum value as an argument, which specifies the tile position to set.
+            The method uses the `animate` method to animate the window to the specified tile position.
+
+            @param sizepos The tile position to set.
+
+        */
         void set_tile_sizepos(TILEPOS sizepos)
         {
             switch (sizepos)
@@ -14215,7 +13875,7 @@ class tile
 
     public:
     /* Constructor */
-        tile(client *&c, TILE tile)
+        tile(client* c, TILE tile)
         : c(c)
         {
             if (!c || c->is_EWMH_fullscreen()) return;
@@ -14363,7 +14023,7 @@ class Events
     /* Methods     */
         void setup()
         {
-            event_handler->setEventCallback(EV_CALL(XCB_KEY_PRESS)    { key_press_handler(ev); });
+            // event_handler->setEventCallback(EV_CALL(XCB_KEY_PRESS)    { key_press_handler(ev); });
             // event_handler->setEventCallback(EV_CALL(XCB_MAP_NOTIFY)        { map_notify_handler(ev); });
             // event_handler->setEventCallback(EV_CALL(XCB_MAP_REQUEST)       { map_req_handler(ev); });
             event_handler->setEventCallback(EV_CALL(XCB_BUTTON_PRESS) { button_press_handler(ev); });
@@ -14378,7 +14038,6 @@ class Events
             // event_handler->setEventCallback(EV_CALL(XCB_MOTION_NOTIFY)     { motion_notify_handler(ev); });
 
             init_signals();
-
         }
 
         void init_signals()
@@ -14476,7 +14135,7 @@ class Events
 
     private:
     /* Methods     */
-        void key_press_handler(const xcb_generic_event_t *&ev)
+        void key_press_handler(xcb_generic_event_t *ev)
         {
             RE_CAST_EV(xcb_key_press_event_t);
             if (e->detail == wm->key_codes.r_arrow)
@@ -14485,23 +14144,24 @@ class Events
                 {
                     case (SHIFT + CTRL + SUPER):
                     {
-                        change_desktop cd(conn);
+                        change_desktop cd;
                         cd.change_with_app(change_desktop::NEXT);
                         return;
                     }
                     
                     case (CTRL + SUPER):
                     {
-                        change_desktop change_desktop(conn);
-                        change_desktop.change_to(change_desktop::NEXT);
+                        change_desktop cd;
+                        cd.change_to(change_desktop::NEXT);
                         return;
                     }
 
                     case SUPER:
                     {
-                        client *c = signal_manager->_window_client_map.retrive( e->event );
-                        if ( !c ) return;
-                        tile( c, TILE::RIGHT );
+                        client* c = wm->client_from_any_window(&e->event);
+                        if (!c) return;
+                        
+                        tile(c, TILE::RIGHT);
                         return;
                     }
                 }
@@ -14513,22 +14173,23 @@ class Events
                 {
                     case (SHIFT + CTRL + SUPER):
                     {
-                        change_desktop cd(conn);
+                        change_desktop cd;
                         cd.change_with_app(change_desktop::PREV);
                         return;
                     }
 
                     case (CTRL + SUPER):
                     {
-                        change_desktop change_desktop(conn);
-                        change_desktop.change_to(change_desktop::PREV);
+                        change_desktop cd;
+                        cd.change_to(change_desktop::PREV);
                         return;
                     }
                     
                     case SUPER:
                     {
-                        client *c = signal_manager->_window_client_map.retrive(e->event);
-                        if ( !c ) return;
+                        client* c = wm->client_from_any_window(&e->event);
+                        if (!c) return;
+
                         tile(c, TILE::LEFT);
                         return;
                     }
@@ -14596,126 +14257,125 @@ class Events
             } */
         }
 
-        static void
-        keyPressH(const xcb_generic_event_t *&ev)
-        {
-            RE_CAST_EV(xcb_key_press_event_t);
-            if (e->detail == wm->key_codes.r_arrow)
-            {
-                switch (e->state)
-                {
-                    case (SHIFT + CTRL + SUPER):
-                    {
-                        change_desktop cd(conn);
-                        cd.change_with_app(change_desktop::NEXT);
-                        return;
-                    }
+        // static void keyPressH(const xcb_generic_event_t *&ev)
+        // {
+        //     RE_CAST_EV(xcb_key_press_event_t);
+        //     if (e->detail == wm->key_codes.r_arrow)
+        //     {
+        //         switch (e->state)
+        //         {
+        //             case (SHIFT + CTRL + SUPER):
+        //             {
+        //                 change_desktop cd(conn);
+        //                 cd.change_with_app(change_desktop::NEXT);
+        //                 return;
+        //             }
                     
-                    case (CTRL + SUPER):
-                    {
-                        change_desktop change_desktop(conn);
-                        change_desktop.change_to(change_desktop::NEXT);
-                        return;
-                    }
+        //             case (CTRL + SUPER):
+        //             {
+        //                 change_desktop change_desktop(conn);
+        //                 change_desktop.change_to(change_desktop::NEXT);
+        //                 return;
+        //             }
 
-                    case SUPER:
-                    {
-                        client *c = signal_manager->_window_client_map.retrive( e->event );
-                        if ( !c ) return;
-                        tile( c, TILE::RIGHT );
-                        return;
-                    }
-                }
-            }
+        //             case SUPER:
+        //             {
+        //                 client *c = signal_manager->_window_client_map.retrive( e->event );
+        //                 if ( !c ) return;
+        //                 tile( c, TILE::RIGHT );
+        //                 return;
+        //             }
+        //         }
+        //     }
             
-            if (e->detail == wm->key_codes.l_arrow)
-            {
-                switch (e->state)
-                {
-                    case (SHIFT + CTRL + SUPER):
-                    {
-                        change_desktop cd(conn);
-                        cd.change_with_app(change_desktop::PREV);
-                        return;
-                    }
+        //     if (e->detail == wm->key_codes.l_arrow)
+        //     {
+        //         switch (e->state)
+        //         {
+        //             case (SHIFT + CTRL + SUPER):
+        //             {
+        //                 change_desktop cd(conn);
+        //                 cd.change_with_app(change_desktop::PREV);
+        //                 return;
+        //             }
 
-                    case (CTRL + SUPER):
-                    {
-                        change_desktop change_desktop(conn);
-                        change_desktop.change_to(change_desktop::PREV);
-                        return;
-                    }
+        //             case (CTRL + SUPER):
+        //             {
+        //                 change_desktop change_desktop(conn);
+        //                 change_desktop.change_to(change_desktop::PREV);
+        //                 return;
+        //             }
                     
-                    case SUPER:
-                    {
-                        client *c = signal_manager->_window_client_map.retrive(e->event);
-                        if ( !c ) return;
-                        tile(c, TILE::LEFT);
-                        return;
-                    }
-                }
-            }
+        //             case SUPER:
+        //             {
+        //                 client *c = signal_manager->_window_client_map.retrive(e->event);
+        //                 if ( !c ) return;
+        //                 tile(c, TILE::LEFT);
+        //                 return;
+        //             }
+        //         }
+        //     }
             
-            if (e->detail == wm->key_codes.d_arrow)
-            {
-                switch (e->state)
-                {
-                    case SUPER:
-                    {
-                        client *c = signal_manager->_window_client_map.retrive(e->event);
-                        if ( !c ) return;
-                        tile(c, TILE::DOWN);
-                        return;
-                    }
-                }
-            }
+        //     if (e->detail == wm->key_codes.d_arrow)
+        //     {
+        //         switch (e->state)
+        //         {
+        //             case SUPER:
+        //             {
+        //                 client *c = signal_manager->_window_client_map.retrive(e->event);
+        //                 if ( !c ) return;
+        //                 tile(c, TILE::DOWN);
+        //                 return;
+        //             }
+        //         }
+        //     }
 
-            if ( e->detail == wm->key_codes.u_arrow )
-            {
-                switch ( e->state )
-                {
-                    case SUPER:
-                    {
-                        client *c = signal_manager->_window_client_map.retrive(e->event);
-                        if ( !c ) return;
-                        tile( c, TILE::UP );
-                        return;
-                    }
-                }
-            }
+        //     if ( e->detail == wm->key_codes.u_arrow )
+        //     {
+        //         switch ( e->state )
+        //         {
+        //             case SUPER:
+        //             {
+        //                 client *c = signal_manager->_window_client_map.retrive(e->event);
+        //                 if ( !c ) return;
+        //                 tile( c, TILE::UP );
+        //                 return;
+        //             }
+        //         }
+        //     }
 
-            /* if (e->detail == wm->key_codes.tab)
-            {
-                switch (e->state)
-                {
-                    case ALT:
-                    {
-                        wm->cycle_focus();
-                        return;
-                    }
-                }
-            }
+        //     /* if (e->detail == wm->key_codes.tab)
+        //     {
+        //         switch (e->state)
+        //         {
+        //             case ALT:
+        //             {
+        //                 wm->cycle_focus();
+        //                 return;
+        //             }
+        //         }
+        //     }
 
-            if (e->detail == wm->key_codes.k)
-            {
-                switch (e->state)
-                {
-                    case SUPER:
-                    {
-                        pid_manager->list_pids();
-                        event_handler->iter_and_log_map_size();
-                        // wm->root.set_backround_png(USER_PATH_PREFIX("/mwm_png/galaxy16-17-3840x1200.png"));
-                        // GET_CLIENT_FROM_WINDOW(e->event);
-                        // c->kill();
-                        // c->win.x(BORDER_SIZE);
-                        // c->win.y(TITLE_BAR_HEIGHT + BORDER_SIZE);
-                        // xcb_flush(conn);
+        //     if (e->detail == wm->key_codes.k)
+        //     {
+        //         switch (e->state)
+        //         {
+        //             case SUPER:
+        //             {
+        //                 pid_manager->list_pids();
+        //                 event_handler->iter_and_log_map_size();
+        //                 // wm->root.set_backround_png(USER_PATH_PREFIX("/mwm_png/galaxy16-17-3840x1200.png"));
+        //                 // GET_CLIENT_FROM_WINDOW(e->event);
+        //                 // c->kill();
+        //                 // c->win.x(BORDER_SIZE);
+        //                 // c->win.y(TITLE_BAR_HEIGHT + BORDER_SIZE);
+        //                 // xcb_flush(conn);
 
-                        return;
-                    }
-                }
-            } */
-        }
+        //                 return;
+        //             }
+        //         }
+        //     } */
+        // }
 
         /* void map_notify_handler(const xcb_generic_event_t *&ev)
         {
@@ -14928,7 +14588,7 @@ class Events
         } */
 };
 
-void keyPressH(const xcb_generic_event_t *ev)
+void keyPressH(xcb_generic_event_t* ev)
 {
     RE_CAST_EV(xcb_key_press_event_t);
     if (e->detail == wm->key_codes.r_arrow)
@@ -14937,22 +14597,23 @@ void keyPressH(const xcb_generic_event_t *ev)
         {
             case (SHIFT + CTRL + SUPER):
             {
-                change_desktop cd(conn);
+                change_desktop cd;
                 cd.change_with_app(change_desktop::NEXT);
                 return;
             }
             
             case (CTRL + SUPER):
             {
-                change_desktop change_desktop(conn);
-                change_desktop.change_to(change_desktop::NEXT);
+                change_desktop cd;
+                cd.change_to(change_desktop::NEXT);
                 return;
             }
 
             case SUPER:
             {
-                client *c = wm->client_from_any_window(&e->event);
-                if ( !c ) return;
+                client* c = wm->client_from_any_window(&e->event);
+                if (!c) return;
+                
                 tile(c, TILE::RIGHT);
                 return;
             }
@@ -14965,22 +14626,23 @@ void keyPressH(const xcb_generic_event_t *ev)
         {
             case (SHIFT + CTRL + SUPER):
             {
-                change_desktop cd(conn);
+                change_desktop cd;
                 cd.change_with_app(change_desktop::PREV);
                 return;
             }
 
             case (CTRL + SUPER):
             {
-                change_desktop change_desktop(conn);
-                change_desktop.change_to(change_desktop::PREV);
+                change_desktop cd;
+                cd.change_to(change_desktop::PREV);
                 return;
             }
             
             case SUPER:
             {
-                client *c = signal_manager->_window_client_map.retrive(e->event);
-                if ( !c ) return;
+                client* c = wm->client_from_any_window(&e->event);
+                if (!c) return;
+                
                 tile(c, TILE::LEFT);
                 return;
             }
@@ -15047,49 +14709,12 @@ void keyPressH(const xcb_generic_event_t *ev)
     {
         ev_sigs->emit(ddTerm->w, DropDownTermSignal, {e->detail, e->state});
     }
-
-    /* if (e->event == dock->get_dock_search_window())
-    {
-        ev_sigs->emit(dock->get_dock_search_window(), DockSearchEvent, {e->detail, e->state});
-    } */
-
-    /* if (e->detail == wm->key_codes.tab)
-    {
-        switch (e->state)
-        {
-            case ALT:
-            {
-                wm->cycle_focus();
-                return;
-            }
-        }
-    }
-
-    if (e->detail == wm->key_codes.k)
-    {
-        switch (e->state)
-        {
-            case SUPER:
-            {
-                pid_manager->list_pids();
-                event_handler->iter_and_log_map_size();
-                // wm->root.set_backround_png(USER_PATH_PREFIX("/mwm_png/galaxy16-17-3840x1200.png"));
-                // GET_CLIENT_FROM_WINDOW(e->event);
-                // c->kill();
-                // c->win.x(BORDER_SIZE);
-                // c->win.y(TITLE_BAR_HEIGHT + BORDER_SIZE);
-                // xcb_flush(conn);
-
-                return;
-            }
-        }
-    } */
 }
 
 void buttonPressH(const xcb_generic_event_t *ev)
 {
     RE_CAST_EV(xcb_button_press_event_t);
-    client *c = wm->client_from_any_window(&e->event);
+    client* c = wm->client_from_any_window(&e->event);
     if (!c) return;
 
     if (e->detail == L_MOUSE_BUTTON)
@@ -15174,7 +14799,7 @@ class test
         {
             // first test
             int i(0), end(100);
-            change_desktop cd(conn);
+            change_desktop cd;
             const int og_duration = cd.duration;
 
             while (i < (end + 1))

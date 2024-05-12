@@ -1329,4 +1329,160 @@ XCB_KEY_PRESS,
         function<void()> enter_function;
 }; */
 
+/** NOTE: DEPRECATED */
+/* class Dock
+{
+    public:
+    // Constructor.
+        Dock() {}
+        
+    // Variabels.
+        context_menu(context_menu);
+        window(main_window);
+        buttons(buttons);
+        uint32_t x = 0, y = 0, width = 48, height = 48;
+        add_app_dialog_window(add_app_dialog_window);
+    
+    // Methods.
+        void init()
+        {
+            main_window.create_window(screen->root, 0, 0, width, height);
+            setup_dock();
+            configure_context_menu();
+            make_apps();
+            add_app_dialog_window.init();
+            add_app_dialog_window.search_window.add_enter_action([this]()-> void
+            {
+                launcher.program((char *) add_app_dialog_window.search_window.search_string.c_str());
+            });
+
+            configure_events();
+        }
+
+        void add_app(const char *app_name)
+        {
+            if (!file.check_if_binary_exists(app_name)) return;
+            apps.push_back(app_name);
+        }
+
+    private:
+    // Variables.
+        vector<const char *>(apps);
+        Launcher(launcher);
+        Logger(log);
+        File(file);
+        
+    // Methods.
+        void calc_size_pos()
+        {
+            int num_of_buttons(buttons.size());
+            if (num_of_buttons == 0) num_of_buttons = 1;
+
+            uint32_t calc_width = width * num_of_buttons;
+            x = ((screen->width_in_pixels / 2) - (calc_width / 2));
+            y = (screen->height_in_pixels - height);
+
+            main_window.x_y_width_height(x, y, calc_width, height);
+            xcb_flush(conn);
+        }
+
+        void setup_dock()
+        {
+            main_window.grab_button({
+                { R_MOUSE_BUTTON, NULL }
+            });
+
+            main_window.set_backround_color(DARK_GREY);
+            calc_size_pos();
+            main_window.map();
+        }
+
+        void configure_context_menu()
+        {
+            context_menu.add_entry("Add app", [this]()-> void
+            {
+                add_app_dialog_window.show();
+            });
+
+            context_menu.add_entry("test with nullptr", nullptr);
+            context_menu.add_entry("test with nullptr", nullptr);
+            context_menu.add_entry("test with nullptr", nullptr);
+            context_menu.add_entry("test with nullptr", nullptr);
+            context_menu.add_entry("test with nullptr", nullptr);
+        }
+
+        void make_apps()
+        {
+            for (const char *app : apps)
+            {
+                buttons.add(app, [app, this]()-> void
+                {
+                    launcher.program((char *) app);
+                });
+
+                buttons.list[buttons.index()].create(
+                    main_window,
+                    ((buttons.index() * width) + DOCK_BORDER),
+                    DOCK_BORDER,
+                    (width - (DOCK_BORDER * 2)),
+                    (height - (DOCK_BORDER * 2)),
+                    BLACK
+                );
+                buttons.list[buttons.index()].put_icon_on_button();
+            }
+
+            calc_size_pos();
+        }
+
+        void configure_events()
+        {
+            event_handler->setEventCallback(XCB_BUTTON_PRESS, [&](Ev ev)-> void
+            {
+                const auto *e = reinterpret_cast<const xcb_button_press_event_t *>(ev);
+                if (e->event == main_window)
+                {
+                    if (e->detail == R_MOUSE_BUTTON)
+                    {
+                        context_menu.show();
+                    }
+                }
+
+                for (int i = 0; i < buttons.size(); ++i)
+                {
+                    if (e->event == buttons.list[i].window)
+                    {
+                        if (e->detail == L_MOUSE_BUTTON)
+                        {
+                            buttons.list[i].activate();
+                        }
+                    }
+                }
+            }); 
+        }
+}; */
+
+// template<typename Type>
+// constexpr Type make_constexpr(Type value) { return value; }
+// #define CONSTEXPR(__name, __value) \
+//     constexpr auto __name = make_constexpr(__value)
+
+// #define CONSTEXPR_TYPE(__type, __name, __value) \
+//     constexpr __type __name = make_constexpr<__type>((__type)__value)
+
+// #define STATIC_CONSTEXPR(__name, __value) \
+//     static CONSTEXPR(__name, __value)
+
+// #define STATIC_CONSTEXPR_TYPE(__type, __name, __value) \
+//     static constexpr __type __name = make_constexpr<__type>((__type)__value)
+
+/* class _scale
+{
+    public:
+    // Methods
+        static uint16_t from_8_to_16_bit(const uint8_t & n)
+        {
+            return (n << 8) | n;
+        }
+}; */
+
 /** <- END: */
