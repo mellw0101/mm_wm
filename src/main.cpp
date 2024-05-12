@@ -8495,13 +8495,9 @@ class context_menu
                 XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_POINTER_MOTION,
                 RAISE
             );
-            ConnSig
-            (
-                context_window,
-                L_MOUSE_BUTTON_EVENT,
-                {
-                    hide__();
-                }
+
+            ConnSig(context_window,L_MOUSE_BUTTON_EVENT,
+                hide__();
             );
         }
 
@@ -8550,6 +8546,7 @@ class context_menu
                     _width = ((max_len + 2) * DEFAULT_FONT_WIDTH);
                 }
             }
+
             uint16_t new_height = (entries.size() * _height);
 
             if (_y + new_height > screen->height_in_pixels)
@@ -9264,7 +9261,7 @@ class Window_Manager
             }
 
         /* Delete */
-            void delete_client_vec__(vector<client *> &vec)
+            void delete_client_vec__(vector<client *>& vec)
             {
                 for (client *c : vec)
                 {
@@ -9276,7 +9273,7 @@ class Window_Manager
                 vector<client *>().swap(vec);
             }
 
-            void delete_desktop_vec__(vector<desktop *> &vec)
+            void delete_desktop_vec__(vector<desktop *>& vec)
             {
                 for (desktop *d : vec)
                 {
@@ -9289,7 +9286,7 @@ class Window_Manager
             }
 
         /* Client */
-            client *make_client__(uint32_t window)
+            client* make_client__(uint32_t window)
             {
                 client *c = new client;
                 if (!c)
@@ -15512,64 +15509,47 @@ void buttonPressH(const xcb_generic_event_t *ev)
 {
     RE_CAST_EV(xcb_button_press_event_t);
     client *c = wm->client_from_any_window(&e->event);
-    if (c == nullptr) return;
+    if (!c) return;
 
     if (e->detail == L_MOUSE_BUTTON)
-    {   
+    {
         if (e->event == c->titlebar)
         {
             c->focus();
             mv_client mv(c, e->event_x, e->event_y);
             wm->focused_client = c;
-            return;
         }
-        
-        if (e->event == c->border[left])
+        else if (e->event == c->border[left])
         {
             resize_client::border border(c, edge::LEFT);
-            return;
         }
-        
-        if (e->event == c->border[right])
+        else if (e->event == c->border[right])
         {
             resize_client::border border(c, edge::RIGHT);
-            return;
         } 
-        
-        if (e->event == c->border[top])
+        else if (e->event == c->border[top])
         {
             resize_client::border border(c, edge::TOP);
-            return;
         }
-        
-        if (e->event == c->border[bottom])
+        else if (e->event == c->border[bottom])
         {
             resize_client::border border(c, edge::BOTTOM_edge);
-            return;
         }
-        
-        if (e->event == c->border[top_left])
+        else if (e->event == c->border[top_left])
         {
             resize_client::border border(c, edge::TOP_LEFT);
-            return;
         }
-
-        if (e->event == c->border[top_right])
+        else if (e->event == c->border[top_right])
         {
             resize_client::border border(c, edge::TOP_RIGHT);
-            return;
         }
-        
-        if (e->event == c->border[bottom_left])
+        else if (e->event == c->border[bottom_left])
         {
             resize_client::border border(c, edge::BOTTOM_LEFT);
-            return;
         }
-
-        if (e->event == c->border[bottom_right])
+        else if (e->event == c->border[bottom_right])
         {
             resize_client::border border(c, edge::BOTTOM_RIGHT);
-            return;
         }
     }
 }
