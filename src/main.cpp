@@ -8859,6 +8859,25 @@ class Window_Manager
                 return focused_window;
             }
 
+            void set_input_focus(uint32_t window)
+            {
+                xcb_void_cookie_t cookie = xcb_set_input_focus_checked
+                (
+                    conn,
+                    XCB_INPUT_FOCUS_POINTER_ROOT,
+                    window,
+                    XCB_CURRENT_TIME
+                );
+                
+                xcb_flush(conn);
+                xcb_generic_error_t* error = xcb_request_check(conn, cookie);
+                if (error)
+                {
+                    loutE << "Failed to focus window error_code" << error->error_code << loutEND;
+                    free(error);   
+                }
+            }
+
         /* Client       */
             /* Focus */
                 void cycle_focus()
@@ -9486,14 +9505,23 @@ class Window_Manager
                     if (c) return;
                     manage_new_client(w);
 
-                    c = client_from_window(&w);
-                    if (!c) return;
+                    if (w != get_focused_window())
+                    {
+                        set_input_focus(w);
+                    }
+
+                    /* c = client_from_window(&w);
+                    if (!c)
+                    {
+                        loutE << "client_from_window returned nullptr" << loutEND;
+                        return;
+                    }
 
                     if (!c->is_active_input_focus())
                     {
                         loutE << "Failed to focus new client" << loutEND;
                         c->focus();
-                    }
+                    } */
                 });
 
                 ConnSig(screen->root, XCB_DESTROY_NOTIFY,
