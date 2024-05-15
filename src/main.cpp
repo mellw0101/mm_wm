@@ -1364,7 +1364,7 @@ class __signal_manager__
             signal_manager->_window_signals.conect(__w, __e, W_callback {__cb})
 
         #define ConnSig(__w, __e, __cb) \
-            signal_manager->_window_signals.conect(__w, __e, [this](uint32_t w) {__cb})
+            signal_manager->_window_signals.conect(__w, __e, [this](uint32_t w) __cb)
 
         #define SIG(__window, __callback, __event) \
             signal_manager->_window_signals.conect(__window, __event, __callback)
@@ -4445,23 +4445,27 @@ class window
             void highlight_on_hover()
             {
                 ConnSig(_window, XCB_ENTER_NOTIFY,
+                {
                     change_backround_color(WHITE);
-                );
+                });
 
                 ConnSig(_window, XCB_LEAVE_NOTIFY,
+                {
                     change_backround_color(BLACK);
-                );
+                });
             }
 
             void highlight_border_on_hover()
             {
                 ConnSig(_window, XCB_ENTER_NOTIFY,
+                {
                     change_border_color(WHITE);
-                );
+                });
 
                 ConnSig(_window, XCB_LEAVE_NOTIFY,
+                {
                     change_border_color(BLACK);
-                );
+                });
             }
 
             void draw_on_expose(const string& str)
@@ -4469,8 +4473,10 @@ class window
                 _name = str;
 
                 ConnSig(_window, XCB_EXPOSE,
+                {
+
                     draw_acc_16(_name.c_str());
-                );
+                });
 
                 Emit(_window, XCB_EXPOSE);
             }
@@ -6843,8 +6849,9 @@ class dialog_window
             );
 
             ConnSig(_win, XCB_EXPOSE,
+            {
                 _win.draw_acc_16(_message.c_str());
-            );
+            });
 
             Emit(_win, XCB_EXPOSE);
             
@@ -6863,6 +6870,7 @@ class dialog_window
             );
 
             ConnSig(_yes_window, L_MOUSE_BUTTON_EVENT,
+            {
                 _win.unmap();
                 _win.kill();
                 signal_manager->_window_signals.emit(screen->root, XCB_DESTROY_NOTIFY, _win);
@@ -6870,11 +6878,13 @@ class dialog_window
                 {
                     _yes_action();
                 }
-            );
+            });
 
             ConnSig(_yes_window, XCB_EXPOSE,
+            {
+
                 _yes_window.draw_acc_16("Yes");
-            );
+            });
 
             Emit(_yes_window, XCB_EXPOSE);
             _yes_window.highlight_on_hover();
@@ -6894,6 +6904,7 @@ class dialog_window
             );
 
             ConnSig(_no_window, L_MOUSE_BUTTON_EVENT,
+            {
                 _win.unmap();
                 _win.kill();
                 signal_manager->_window_signals.emit(screen->root, XCB_DESTROY_NOTIFY, _win);
@@ -6901,11 +6912,12 @@ class dialog_window
                 {
                     _no_action();
                 }
-            );
+            });
 
             ConnSig(_no_window, XCB_EXPOSE,
+            {
                 _no_window.draw_acc_16("No");
-            );
+            });
 
             Emit(_no_window, XCB_EXPOSE);
             _no_window.highlight_on_hover();
@@ -7881,19 +7893,22 @@ class client
             xcb_flush(conn);
     
             ConnSig(win, XCB_FOCUS_IN,
+            {
                 win.ungrab_button({{L_MOUSE_BUTTON, NULL}});
                 xcb_flush(conn);
-            );
+            });
 
             ConnSig(win, XCB_FOCUS_OUT,
+            {
                 win.grab_button({{L_MOUSE_BUTTON, NULL}});
                 xcb_flush(conn);
-            );
+            });
 
             ConnSig(win, L_MOUSE_BUTTON_EVENT,
+            {
                 focus();
                 xcb_flush(conn);
-            );
+            });
 
             frame.set_event_mask(FRAME_EVENT_MASK);
             frame.map();
@@ -7917,6 +7932,7 @@ class client
                 XCB_EVENT_MASK_EXPOSURE,
                 MAP
             );
+
             xcb_flush(conn);
             icon.raise();
             CWC(titlebar);
@@ -7925,16 +7941,18 @@ class client
             draw_title(TITLE_REQ_DRAW);
 
             ConnSig(titlebar, XCB_EXPOSE,
+            {
                 titlebar.clear();
                 titlebar.draw_acc_16(win.get_net_wm_name().c_str());
                 xcb_flush(conn);
-            );
+            });
 
             ConnSig(win, XCB_PROPERTY_NOTIFY,
+            {
                 titlebar.clear();
                 titlebar.draw_acc_16(win.get_net_wm_name_by_req().c_str());
                 xcb_flush(conn);
-            );
+            });
 
             titlebar.send_event(XCB_EVENT_MASK_EXPOSURE);
         }
@@ -7963,12 +7981,14 @@ class client
             close_button.grab_button({{L_MOUSE_BUTTON, NULL}});
 
             ConnSig(close_button, L_MOUSE_BUTTON_EVENT,
+            {
                 if (!win.is_mapped())
                 {
                     kill();
                 }
+
                 win.kill_test();
-            );
+            });
 
             close_button.highlight_border_on_hover();
         }
@@ -8022,9 +8042,10 @@ class client
             max_button.set_backround_png(string(USER_PATH_PREFIX("/max.png")).c_str());
 
             ConnSig(max_button, L_MOUSE_BUTTON_EVENT,
+            {
                 C_EMIT(this, BUTTON_MAXWIN_PRESS);
                 XCB::flush();
-            );
+            });
 
             max_button.highlight_border_on_hover();
         }
@@ -8061,14 +8082,16 @@ class client
             min_button.set_backround_png(s.c_str());
 
             ConnSig(min_button, XCB_ENTER_NOTIFY,
+            {
                 min_button.change_border_color(WHITE);
                 XCB::flush();
-            );
+            });
 
             ConnSig(min_button, XCB_LEAVE_NOTIFY,
+            {
                 min_button.change_border_color(BLACK);
                 XCB::flush();
-            );
+            });
         }
         
         void make_borders()
@@ -8420,13 +8443,15 @@ class Entry
             window.highlight_on_hover();
 
             ConnSig(window, L_MOUSE_BUTTON_EVENT,
+            {
                 Emit(window.parent(), HIDE_CONTEXT_MENU);
                 if (action) action();
-            );
+            });
 
             ConnSig(window, R_MOUSE_BUTTON_EVENT,
+            {
                 Emit(window.parent(), HIDE_CONTEXT_MENU);
-            );
+            });
 
             window.grab_button
             ({
@@ -8478,8 +8503,9 @@ class context_menu
             );
 
             ConnSig(context_window,L_MOUSE_BUTTON_EVENT,
+            {
                 hide_();
-            );
+            });
         }
 
         void hide_()
@@ -8544,8 +8570,9 @@ class context_menu
             context_window.focus();
 
             ConnSig(context_window, HIDE_CONTEXT_MENU,
+            {
                 hide_();
-            );
+            });
 
             make_entries_();
         }
@@ -8675,7 +8702,7 @@ class Window_Manager
                 context_menu->add_entry("falkon",               [this]() { launcher.launch_child_process("falkon"); });
                 context_menu->add_entry("quit",                 [this]() { quit(0); });
 
-                setup_events__();
+                setup_events_();
             }
 
             void quit(int __status)
@@ -9145,19 +9172,6 @@ class Window_Manager
                 delete c;
             }
 
-            void check_unclosed_clients()
-            {
-                for (client* const& c : client_list)
-                {
-                    if (c->frame.is_mapped()
-                    && !c->win.is_mapped())
-                    {
-                        c->kill();
-                        remove_client(c);
-                    }
-                }
-            }  
-
         /* Desktop      */
             void create_new_desktop(uint16_t n)
             {
@@ -9396,34 +9410,61 @@ class Window_Manager
             }
 
         /* Events */
-            void setup_events__()
+            void setup_events_()
             {
                 ConnSig(screen->root, XCB_MAP_REQUEST,
+                {
+                    /*
+
+                        Try to recive a client based on the request
+                        and return early if the client is valid as
+                        this means it has already been managed
+
+                    */
                     client *c = client_from_any_window(&w);
-                    if (c != nullptr) return;
+                    if (c) return;
                     manage_new_client(w);
-                );
+                });
 
                 ConnSig(screen->root, XCB_DESTROY_NOTIFY,
-                    loutI << "Destroy notify" << loutEND;
+                {
                     client* c = client_from_window(&w);
                     if (!c) return;
                     c->kill();
                     remove_client(c);
-                    check_unclosed_clients();
-                );
+
+                    /*
+                    
+                        Check if there are any clients that failed
+                        to properly unmap the frame and the rest of
+                        the decoratons but successfully unmaped the
+                        'main' window
+                    
+                    */
+                    for (client* const& c : client_list)
+                    {
+                        if (c->frame.is_mapped()
+                        && !c->win.is_mapped())
+                        {
+                            c->kill();
+                            remove_client(c);
+                        }
+                    }
+                });
 
                 ConnSig(screen->root, L_MOUSE_BUTTON_EVENT,
+                {   
                     unfocus();
                     if (context_menu->context_window.is_mapped())
                     {
                         Emit(context_menu->context_window, HIDE_CONTEXT_MENU);
                     }
-                );
+                });
                 
                 ConnSig(screen->root, R_MOUSE_BUTTON_EVENT,
+                {
                     context_menu->show();
-                );
+                });
                 
                 if (BORDER_SIZE == 0)
                 {
@@ -9843,8 +9884,9 @@ class __status_bar__
             );
 
             ConnSig(_w[_TIME_DATE], XCB_EXPOSE,
+            {
                 _w[_TIME_DATE].draw_acc(get_time_and_date().c_str());
-            );
+            });
 
             _w[_WIFI].create_window
             (
@@ -9859,6 +9901,7 @@ class __status_bar__
             );
 
             ConnSig(_w[_WIFI], L_MOUSE_BUTTON_EVENT,
+            {
                 if (this->_w[_WIFI_DROPWOWN].is_mapped())
                 {
                     hide_(this->_w[_WIFI_DROPWOWN]);
@@ -9874,7 +9917,7 @@ class __status_bar__
                     _w[_WIFI_INFO].send_event(XCB_EVENT_MASK_EXPOSURE);
                     _w[_WIFI_CLOSE].send_event(XCB_EVENT_MASK_EXPOSURE);
                 }
-            );
+            });
 
             Bitmap bitmap(20, 20);
             
@@ -9916,12 +9959,14 @@ class __status_bar__
             );
             
             ConnSig(_w[_AUDIO], XCB_EXPOSE,
+            {
                 _w[_AUDIO].draw("Audio");
-            );
+            });
 
             _w[_AUDIO].send_event(XCB_EVENT_MASK_EXPOSURE);
 
             ConnSig(_w[_AUDIO], L_MOUSE_BUTTON_EVENT,
+            {
                 if (_w[_AUDIO_DROPDOWN].is_mapped())
                 {
                     hide_(_w[_AUDIO_DROPDOWN]);
@@ -9935,15 +9980,17 @@ class __status_bar__
 
                     show_(_w[_AUDIO_DROPDOWN]);
                 }
-            );
+            });
 
             ConnSig(_w[_AUDIO], XCB_ENTER_NOTIFY,
+            {
                 _w[_AUDIO].change_backround_color(WHITE);
-            );
+            });
 
             ConnSig(_w[_AUDIO], XCB_LEAVE_NOTIFY,
+            {
                 _w[_AUDIO].change_backround_color(DARK_GREY);
-            );
+            });
 
             _w[SHUTDOWN].create_window
             (
@@ -9957,9 +10004,18 @@ class __status_bar__
                 MAP
             );
 
-            _w[SHUTDOWN_DROPDOWN].create_window(screen->root, (WIFI_WINDOW_X - BUTTON_SIZE), 20, 100, 60, BLACK);
+            _w[SHUTDOWN_DROPDOWN].create_window
+            (
+                screen->root,
+                ((WIFI_WINDOW_X - 50 - BUTTON_SIZE) - (100 / 2)),
+                20,
+                100,
+                60,
+                BLACK
+            );
 
             ConnSig(_w[SHUTDOWN], L_MOUSE_BUTTON_EVENT,
+            {
                 if (_w[SHUTDOWN_DROPDOWN].is_mapped())
                 {
                     _w[SHUTDOWN_DROPDOWN].unmap();
@@ -9968,25 +10024,61 @@ class __status_bar__
                 {
                     _w[SHUTDOWN_DROPDOWN].map();
                 }
+            }
             );
 
-            _w[SHUTDOWN_NOW].create_window(_w[SHUTDOWN_DROPDOWN], 0, 0, 100, 20, BLACK, BUTTON_EVENT_MASK, MAP);
+            _w[SHUTDOWN_NOW].create_window
+            (
+                _w[SHUTDOWN_DROPDOWN],
+                0,
+                0,
+                100,
+                20,
+                BLACK,
+                BUTTON_EVENT_MASK,
+                MAP
+            );
+
             _w[SHUTDOWN_NOW].draw_on_expose("Shutdown");
             _w[SHUTDOWN_NOW].highlight_on_hover();
             
             ConnSig(_w[SHUTDOWN_NOW], L_MOUSE_BUTTON_EVENT,
+            {
                 wm->launcher.launch_child_process("sudo shutdown now");
+            });
+
+            _w[SHUTDOWN_REBOOT].create_window
+            (
+                _w[SHUTDOWN_DROPDOWN],
+                0,
+                20,
+                100,
+                20,
+                BLACK,
+                BUTTON_EVENT_MASK,
+                MAP
             );
 
-            _w[SHUTDOWN_REBOOT].create_window(_w[SHUTDOWN_DROPDOWN], 0, 20, 100, 20, BLACK, BUTTON_EVENT_MASK, MAP);
             _w[SHUTDOWN_REBOOT].draw_on_expose("Reboot");
             _w[SHUTDOWN_REBOOT].highlight_on_hover();
 
             ConnSig(_w[SHUTDOWN_REBOOT], L_MOUSE_BUTTON_EVENT,
+            {
                 wm->launcher.launch_child_process("sudo reboot");
+            });
+
+            _w[SHUTDOWN_SLEEP].create_window
+            (
+                _w[SHUTDOWN_DROPDOWN],
+                0,
+                40,
+                100,
+                20,
+                BLACK,
+                BUTTON_EVENT_MASK,
+                MAP
             );
 
-            _w[SHUTDOWN_SLEEP].create_window(_w[SHUTDOWN_DROPDOWN], 0, 40, 100, 20, BLACK, BUTTON_EVENT_MASK, MAP);
             _w[SHUTDOWN_SLEEP].draw_on_expose("Sleep");
             _w[SHUTDOWN_SLEEP].highlight_on_hover();
         }
@@ -10023,22 +10115,26 @@ class __status_bar__
                 );
 
                 ConnSig(_w[_WIFI_CLOSE], L_MOUSE_BUTTON_EVENT,
+                {
                     hide_(_w[_WIFI_DROPWOWN]);
-                );
+                });
 
                 ConnSig(_w[_WIFI_CLOSE], XCB_EXPOSE,
+                {
                     _w[_WIFI_CLOSE].draw_acc("Close");
-                );
+                });
 
                 _w[_WIFI_CLOSE].send_event(XCB_EVENT_MASK_EXPOSURE);
 
                 ConnSig(_w[_WIFI_CLOSE], XCB_ENTER_NOTIFY,
+                {
                     _w[_WIFI_CLOSE].change_backround_color(WHITE);
-                );
+                });
 
                 ConnSig(_w[_WIFI_CLOSE], XCB_LEAVE_NOTIFY,
+                {
                     _w[_WIFI_CLOSE].change_backround_color(DARK_GREY);
-                );
+                });
 
                 _w[_WIFI_INFO].create_window
                 (
@@ -10054,12 +10150,13 @@ class __status_bar__
                 );
 
                 ConnSig(_w[_WIFI_INFO], XCB_EXPOSE,
+                {
                     string local_ip("Local ip: " + network->get_local_ip_info(__network__::LOCAL_IP));
                     _w[_WIFI_INFO].draw_text_auto_color(local_ip.c_str(), 4, 16, BLACK);
 
                     string local_interface("interface: " + network->get_local_ip_info(__network__::INTERFACE_FOR_LOCAL_IP));
                     _w[_WIFI_INFO].draw_text_auto_color(local_interface.c_str(), 4, 30, BLACK);
-                );
+                });
 
                 _w[_WIFI_INFO].send_event(XCB_EVENT_MASK_EXPOSURE);
             }
