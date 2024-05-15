@@ -6374,19 +6374,23 @@ class window
         /* Main       */
             /* Focus */
                 /**
-                 * @brief avalible 'revert_to' options 
-                 *
-                 * @p XCB_INPUT_FOCUS_NONE 
-                 * @p XCB_INPUT_FOCUS_PARENT 
-                 * @p XCB_INPUT_FOCUS_POINTER_ROOT
-                 *
-                 * @p XCB_INPUT_FOCUS_FOLLOW_KEYBOARD NOTE: This is experemental
-                 * 
+
+                    @brief avalible 'revert_to' options 
+
+                    @p XCB_INPUT_FOCUS_NONE 
+                    @p XCB_INPUT_FOCUS_PARENT 
+                    @p XCB_INPUT_FOCUS_POINTER_ROOT
+
+                    @p XCB_INPUT_FOCUS_FOLLOW_KEYBOARD NOTE: This is experemental
+
                  */
                 void focus_input()
                 {
                     AutoTimer timer("window::focus_input");
-                    XCB::set_focus_input(_window);
+                    // XCB::set_focus_input(_window);
+
+                    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, _window, XCB_CURRENT_TIME);
+                    xcb_flush(conn);
                 }
 
             void make_window()
@@ -6774,7 +6778,7 @@ class window
                     Also advances the input string by the number of bytes used for
                     the decoded character.
 
-                */
+            */
             uint32_t decode_utf8_char(const char **input)
             {
                 const unsigned char *str = (const unsigned char *)*input;
@@ -6817,7 +6821,12 @@ class window
                 return codepoint;
             }
             
-            /* Converts a UTF-8 string to an array of xcb_char2b_t for xcb_image_text_16 */
+            /*
+
+                Converts a UTF-8 string to an array
+                of xcb_char2b_t for xcb_image_text_16
+
+            */
             xcb_char2b_t *convert_to_char2b(const char *input, int *len)
             {
                 size_t utf8_len = slen(input);
@@ -7798,6 +7807,11 @@ class client
             bool is_EWMH_fullscreen()
             {
                 return win.is_EWMH_fullscreen();
+            }
+
+            bool is_active_input_focus()
+            {
+                return win.is_active_input_focus();
             }
             
             bool is_button_max_win()
@@ -9472,8 +9486,10 @@ class Window_Manager
                     if (c) return;
                     manage_new_client(w);
 
-                    c = client_from_any_window(&w);
-                    if (!c->win.is_active_input_focus())
+                    c = client_from_window(&w);
+                    if (!c) return;
+
+                    if (!c->is_active_input_focus())
                     {
                         loutE << "Failed to focus new client" << loutEND;
                         c->focus();
@@ -14061,7 +14077,7 @@ class tile
 {
     private:
     /* Variabels   */
-        client* c;
+        client* c = nullptr;
 
     /* Methods     */
         
