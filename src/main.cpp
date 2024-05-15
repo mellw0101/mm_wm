@@ -3273,6 +3273,7 @@ class evH
     private:
         xcb_generic_event_t *ev;
         __key_codes__ key_codes;
+        bool running = true;
 
     public:
         evH() {}
@@ -3283,7 +3284,7 @@ class evH
         {
             key_codes.init();
 
-            while (true)
+            while (running)
             {
                 AutoTimer t("main_loop");
 
@@ -3447,6 +3448,11 @@ class evH
                 }
                 free(ev);
             }
+        }
+
+        void end_loop()
+        {
+            running = false;
         }
 };
 static evH *ev_hand(nullptr);
@@ -4845,6 +4851,27 @@ class window
                 }
 
                 return _window == active_window;
+            }
+
+            bool is_active_input_focus()
+            {
+                xcb_get_input_focus_cookie_t cookie = xcb_get_input_focus(conn);
+                xcb_get_input_focus_reply_t* reply = xcb_get_input_focus_reply(conn, cookie, nullptr);
+                if (!reply)
+                {
+                    loutE << "xcb_get_input_focus_reply_t == nullptr" << loutEND;
+                    return false;
+                }
+
+                uint32_t focus_window = reply->focus;
+                free(reply);
+                
+                if (focus_window == _window)
+                {
+                    return true;
+                }
+                
+                return false;
             }
 
             uint32_t check_event_mask_sum()
@@ -8531,6 +8558,7 @@ class context_menu
                     _width,
                     _height
                 );
+
                 Emit(entries[i].window, XCB_EXPOSE);
             }
         }
@@ -8560,6 +8588,7 @@ class context_menu
             {
                 _y = ( screen->height_in_pixels - new_height );
             }
+
             if (_x + _width > screen->width_in_pixels)
             {
                 _x = ( screen->width_in_pixels - _width );
@@ -8705,7 +8734,7 @@ class Window_Manager
                 setup_events_();
             }
 
-            void quit(int __status)
+            void quit(int status)
             {
                 pid_manager->kill_all_pids();
                 xcb_flush(conn);
@@ -8713,10 +8742,11 @@ class Window_Manager
                 delete_desktop_vec__(desktop_list);
                 xcb_ewmh_connection_wipe(ewmh);
                 xcb_disconnect(conn);
-                exit(__status);
+                ev_hand->end_loop();
+                exit(status);
             }
             
-            void get_atom(char *name, xcb_atom_t *atom)
+            void get_atom(char* name, xcb_atom_t* atom)
             {
                 xcb_intern_atom_reply_t *reply = XCB::intern_atom_reply(XCB::intern_atom(0, name));
                 if (reply == nullptr)
@@ -8777,26 +8807,42 @@ class Window_Manager
                 xcb_flush(conn);
             }
             
-            // stack '__window1' above '__window2'
-            void window_above(uint32_t __window1, uint32_t __window2)
+            // stack 'window1' above 'window2'
+            void window_above(uint32_t window1, uint32_t window2)
             {
                 window_stack
                 (
-                    __window1,
-                    __window2,
+                    window1,
+                    window2,
                     XCB_STACK_MODE_ABOVE
                 );
             }
             
-            // stack '__window1' below '__window2'
-            void window_below(uint32_t __window1, uint32_t __window2)
+            // stack 'window1' below 'window2'
+            void window_below(uint32_t window1, uint32_t window2)
             {
                 window_stack
                 (
-                    __window1,
-                    __window2,
+                    window1,
+                    window2,
                     XCB_STACK_MODE_BELOW    
                 );
+            }
+
+            uint32_t get_focused_window()
+            {
+                xcb_get_input_focus_cookie_t cookie = xcb_get_input_focus(conn);
+                xcb_get_input_focus_reply_t* reply = xcb_get_input_focus_reply(conn, cookie, nullptr);
+                if (!reply)
+                {
+                    // Return a null window if the reply is null
+                    return XCB_NONE;
+                }
+
+                uint32_t focused_window = reply->focus;
+                free(reply);
+
+                return focused_window;
             }
 
         /* Client       */
@@ -9120,6 +9166,7 @@ class Window_Manager
             void remove_client(client* c)
             {
                 AutoTimer timer(__func__);
+
                 if (!c)
                 {
                     loutE << "null client" << '\n';
@@ -9424,6 +9471,13 @@ class Window_Manager
                     client *c = client_from_any_window(&w);
                     if (c) return;
                     manage_new_client(w);
+
+                    c = client_from_any_window(&w);
+                    if (!c->win.is_active_input_focus())
+                    {
+                        loutE << "Failed to focus new client" << loutEND;
+                        c->focus();
+                    }
                 });
 
                 ConnSig(screen->root, XCB_DESTROY_NOTIFY,
@@ -10500,17 +10554,18 @@ class Mwm_Animator
         const double frameDuration = 1000.0 / frameRate; 
     
     // Methods.
-        void XAnimation(const int & endX)/**
-         *
-         * @brief Performs animation on window 'x' position until the specified 'endX' is reached.
-         * 
-         * This function updates the 'x' of a window in a loop until the current 'x'
-         * matches the specified end 'x'. It uses the "XStep()" function to incrementally
-         * update the 'x' and the "thread_sleep()" function to introduce a delay between updates.
-         * 
-         * @param endX The desired 'x' position of the window.
-         *
-         */
+        /**
+
+            @brief Performs animation on window 'x' position until the specified 'endX' is reached.
+
+            This function updates the 'x' of a window in a loop until the current 'x'
+            matches the specified end 'x'. It uses the "XStep()" function to incrementally
+            update the 'x' and the "thread_sleep()" function to introduce a delay between updates.
+
+            @param endX The desired 'x' position of the window.
+
+        */
+        void XAnimation(const int & endX)
         {
             XlastUpdateTime = chrono::high_resolution_clock::now();
             while (true)
@@ -10526,14 +10581,15 @@ class Mwm_Animator
             }
         }
 
-        void XStep()/**
+        /**
          * @brief Performs a step in the X direction.
          * 
          * This function increments the currentX variable by the stepX value.
          * If it is time to render, it configures the window's X position using the currentX value.
          * 
          * @note This function assumes that the connection and window variables are properly initialized.
-         */
+        */
+        void XStep()
         {
             currentX += stepX;
             
@@ -10553,7 +10609,7 @@ class Mwm_Animator
             }
         }
     
-        void YAnimation(const int & endY)/**
+        /**
          *
          * @brief Performs animation on window 'y' position until the specified 'endY' is reached.
          * 
@@ -10563,7 +10619,8 @@ class Mwm_Animator
          * 
          * @param endY The desired 'y' positon of the window.
          *
-         */
+        */
+        void YAnimation(int endY)
         {
             YlastUpdateTime = std::chrono::high_resolution_clock::now();
             while (true)
@@ -10579,13 +10636,14 @@ class Mwm_Animator
             }
         }
     
-        void YStep()/**
+        /**
          * @brief Performs a step in the Y direction.
          * 
          * This function increments the currentY variable by the stepY value.
          * If it is time to render, it configures the window's Y position using xcb_configure_window
          * and flushes the connection using xcb_flush.
-         */
+        */
+        void YStep()
         {
             currentY += stepY;
             
@@ -10603,17 +10661,18 @@ class Mwm_Animator
             }
         }
         
-        void WAnimation(const int & endWidth)/**
-         *
-         * @brief Performs a 'width' animation until the specified end 'width' is reached.
-         * 
-         * This function updates the 'width' of a window in a loop until the current 'width'
-         * matches the specified end 'width'. It uses the "WStep()" function to incrementally
-         * update the 'width' and the "thread_sleep()" function to introduce a delay between updates.
-         * 
-         * @param endWidth The desired 'width' of the window.
-         *
-         */
+        /**
+
+            @brief Performs a 'width' animation until the specified end 'width' is reached.
+
+            This function updates the 'width' of a window in a loop until the current 'width'
+            matches the specified end 'width'. It uses the "WStep()" function to incrementally
+            update the 'width' and the "thread_sleep()" function to introduce a delay between updates.
+
+            @param endWidth The desired 'width' of the window.
+
+        */
+        void WAnimation(int endWidth)
         {
             WlastUpdateTime = chrono::high_resolution_clock::now();
             while (true)
@@ -10629,14 +10688,15 @@ class Mwm_Animator
             }
         }
     
-        void WStep()/**
-         *
-         * @brief Performs a step in the width calculation and updates the window width if it is time to render.
-         * 
-         * This function increments the current width by the step width. If it is time to render, it configures the window width
-         * using the XCB library and flushes the connection.
-         *
-         */
+        /**
+
+            @brief Performs a step in the width calculation and updates the window width if it is time to render.
+ 
+            This function increments the current width by the step width. If it is time to render, it configures the window width
+            using the XCB library and flushes the connection.
+
+        */
+        void WStep()
         {
             currentWidth += stepWidth;
 
@@ -10654,17 +10714,18 @@ class Mwm_Animator
             }
         }
 
-        void HAnimation(const int & endHeight)/**
-         *
-         * @brief Performs a 'height' animation until the specified end 'height' is reached.
-         * 
-         * This function updates the 'height' of a window in a loop until the current 'height'
-         * matches the specified end 'height'. It uses the "HStep()" function to incrementally
-         * update the 'height' and the "thread_sleep()" function to introduce a delay between updates.
-         * 
-         * @param endWidth The desired 'height' of the window.
-         *
-         */
+        /**
+
+            @brief Performs a 'height' animation until the specified end 'height' is reached.
+
+            This function updates the 'height' of a window in a loop until the current 'height'
+            matches the specified end 'height'. It uses the "HStep()" function to incrementally
+            update the 'height' and the "thread_sleep()" function to introduce a delay between updates.
+
+            @param endWidth The desired 'height' of the window.
+
+        */
+        void HAnimation(const int & endHeight)
         {
             HlastUpdateTime = chrono::high_resolution_clock::now();
             while (true)
@@ -10680,15 +10741,16 @@ class Mwm_Animator
             }
         }
     
-        void HStep()/**
-         *
-         * @brief Increases the current height by the step height and updates the window height if it's time to render.
-         * 
-         * This function is responsible for incrementing the current height by the step height and updating the window height
-         * if it's time to render. It uses the xcb_configure_window function to configure the window height and xcb_flush to
-         * flush the changes to the X server.
-         *
-         */
+        /**
+         
+            @brief Increases the current height by the step height and updates the window height if it's time to render.
+          
+            This function is responsible for incrementing the current height by the step height and updating the window height
+            if it's time to render. It uses the xcb_configure_window function to configure the window height and xcb_flush to
+            flush the changes to the X server.
+         
+        */
+        void HStep()
         {
             currentHeight += stepHeight;
             
@@ -10706,7 +10768,7 @@ class Mwm_Animator
             }
         }
     
-        void GFrameAnimation(const int & endX, const int & endY, const int & endWidth, const int & endHeight)
+        void GFrameAnimation(int endX, int endY, int endWidth, int endHeight)
         {
             while (true)
             {
@@ -10735,17 +10797,18 @@ class Mwm_Animator
             }
         }
     
-        void CliXAnimation(const int & endX)/**
-         *
-         * @brief Performs animation on window 'x' position until the specified 'endX' is reached.
-         * 
-         * This function updates the 'x' of a window in a loop until the current 'x'
-         * matches the specified end 'x'. It uses the "XStep()" function to incrementally
-         * update the 'x' and the "thread_sleep()" function to introduce a delay between updates.
-         * 
-         * @param endX The desired 'x' position of the window.
-         *
-         */
+        /**
+
+            @brief Performs animation on window 'x' position until the specified 'endX' is reached.
+
+            This function updates the 'x' of a window in a loop until the current 'x'
+            matches the specified end 'x'. It uses the "XStep()" function to incrementally
+            update the 'x' and the "thread_sleep()" function to introduce a delay between updates.
+
+            @param endX The desired 'x' position of the window.
+
+        */
+        void CliXAnimation(int endX)
         {
             XlastUpdateTime = std::chrono::high_resolution_clock::now();
             while (true)
@@ -10759,17 +10822,18 @@ class Mwm_Animator
             }
         }
         
-        void CliYAnimation(const int & endY)/**
-         *
-         * @brief Performs animation on window 'y' position until the specified 'endY' is reached.
-         * 
-         * This function updates the 'y' of a window in a loop until the current 'y'
-         * matches the specified end 'y'. It uses the "YStep()" function to incrementally
-         * update the 'y' and the "thread_sleep()" function to introduce a delay between updates.
-         * 
-         * @param endY The desired 'y' positon of the window.
-         *
-         */
+        /**
+
+            @brief Performs animation on window 'y' position until the specified 'endY' is reached.
+
+            This function updates the 'y' of a window in a loop until the current 'y'
+            matches the specified end 'y'. It uses the "YStep()" function to incrementally
+            update the 'y' and the "thread_sleep()" function to introduce a delay between updates.
+
+            @param endY The desired 'y' positon of the window.
+
+        */
+        void CliYAnimation(int endY)
         {
             YlastUpdateTime = chrono::high_resolution_clock::now();
             while (true)
@@ -10784,17 +10848,18 @@ class Mwm_Animator
             }
         }
         
-        void CliWAnimation(const int & endWidth)/**
-         *
-         * @brief Performs a 'width' animation until the specified end 'width' is reached.
-         * 
-         * This function updates the 'width' of a window in a loop until the current 'width'
-         * matches the specified end 'width'. It uses the "WStep()" function to incrementally
-         * update the 'width' and the "thread_sleep()" function to introduce a delay between updates.
-         * 
-         * @param endWidth The desired 'width' of the window.
-         *
-         */
+        /**
+
+            @brief Performs a 'width' animation until the specified end 'width' is reached.
+
+            This function updates the 'width' of a window in a loop until the current 'width'
+            matches the specified end 'width'. It uses the "WStep()" function to incrementally
+            update the 'width' and the "thread_sleep()" function to introduce a delay between updates.
+
+            @param endWidth The desired 'width' of the window.
+
+        */
+        void CliWAnimation(int endWidth)
         {
             WlastUpdateTime = std::chrono::high_resolution_clock::now();
             while (true)
@@ -10809,17 +10874,18 @@ class Mwm_Animator
             }
         }
     
-        void CliHAnimation(const int & endHeight)/**
-         *
-         * @brief Performs a 'height' animation until the specified end 'height' is reached.
-         * 
-         * This function updates the 'height' of a window in a loop until the current 'height'
-         * matches the specified end 'height'. It uses the "HStep()" function to incrementally
-         * update the 'height' and the "thread_sleep()" function to introduce a delay between updates.
-         * 
-         * @param endWidth The desired 'height' of the window.
-         *
-         */
+        /**
+
+            @brief Performs a 'height' animation until the specified end 'height' is reached.
+
+            This function updates the 'height' of a window in a loop until the current 'height'
+            matches the specified end 'height'. It uses the "HStep()" function to incrementally
+            update the 'height' and the "thread_sleep()" function to introduce a delay between updates.
+
+            @param endWidth The desired 'height' of the window.
+
+        */
+        void CliHAnimation(int endHeight)
         {
             HlastUpdateTime = chrono::high_resolution_clock::now();
             while (true)
@@ -10834,75 +10900,119 @@ class Mwm_Animator
             }
         }
 
-        void stopAnimations()/**
-         *
-         * @brief Stops all animations by setting the corresponding flags to true and joining the animation threads.
-         *        After joining the threads, the flags are set back to false.
-         *
-         */
+        /**
+
+            @brief Stops all animations by setting the corresponding
+                flags to true and joining the animation threads.
+                After joining the threads, the flags are set back to false.
+
+        */
+        void stopAnimations()
         {
-            stopHFlag.store(true);
+            stopGFlag.store(true);
             stopXFlag.store(true);
             stopYFlag.store(true);
             stopWFlag.store(true);
             stopHFlag.store(true);
 
-            if (GAnimationThread.joinable())
+            try
             {
-                GAnimationThread.join();
-                stopGFlag.store(false);
+                if (GAnimationThread.joinable())
+                {
+                    GAnimationThread.join();
+                    stopGFlag.store(false);
+                }
             }
-            
-            if (XAnimationThread.joinable())
+            catch (const system_error& e)
             {
-                XAnimationThread.join();
-                stopXFlag.store(false);
+                loutE << "Error joining GAnimationThread: " << e.what() << loutEND;
             }
-            
-            if (YAnimationThread.joinable())
+
+            try
             {
-                YAnimationThread.join();
-                stopYFlag.store(false);
+                if (XAnimationThread.joinable())
+                {
+                    XAnimationThread.join();
+                    stopXFlag.store(false);
+                }
             }
-            
-            if (WAnimationThread.joinable())
+            catch (const system_error& e)
             {
-                WAnimationThread.join();
-                stopWFlag.store(false);
+                loutE << "Error joining XAnimationThread: " << e.what() << loutEND;
             }
-            
-            if (HAnimationThread.joinable())
+
+            try
             {
-                HAnimationThread.join();
-                stopHFlag.store(false);
+                if (YAnimationThread.joinable())
+                {
+                    YAnimationThread.join();
+                    stopYFlag.store(false);
+                }
+            }
+            catch (const system_error& e)
+            {
+                loutE << "Error joining YAnimationThread: " << e.what() << loutEND;
+            }
+
+            try
+            {
+                if (WAnimationThread.joinable())
+                {
+                    WAnimationThread.join();
+                    stopWFlag.store(false);
+                }
+            }
+            catch (const system_error& e)
+            {
+                loutE << "Error joining WAnimationThread: " << e.what() << loutEND;
+            }
+
+            try
+            {
+                if (HAnimationThread.joinable())
+                {
+                    HAnimationThread.join();
+                    stopHFlag.store(false);
+                }
+            }
+            catch (const system_error& e)
+            {
+                loutE << "Error joining HAnimationThread: " << e.what() << loutEND;
             }
         }
     
-        void thread_sleep(const double & milliseconds)/**
-         *
-         * @brief Sleeps the current thread for the specified number of milliseconds.
-         *
-         * @param milliseconds The number of milliseconds to sleep. A double is used to allow for
-         *                     fractional milliseconds, providing finer control over animation timing.
-         *
-         * @note This is needed as the time for each thread to sleep is the main thing to be calculated, 
-         *       as this class is designed to iterate every pixel and then only update that to the X-server at the given framerate.
-         *
-         */
+        /**
+         
+            @brief Sleeps the current thread for the specified number of milliseconds.
+         
+            @param milliseconds The number of milliseconds to sleep. A double is used to allow for
+                              fractional milliseconds, providing finer control over animation timing.
+         
+            NOTE: This is needed as the time for each thread to sleep is the main thing to be calculated, 
+                as this class is designed to iterate every pixel and then only update that to the X-server at the given framerate.
+         
+        */
+        void thread_sleep(const double &milliseconds)
         {
-            auto duration = chrono::duration<double, milli>(milliseconds); // Creating a duration with a 'double' in milliseconds
-            this_thread::sleep_for(duration); // Sleeping for the duration
+            // Creating a duration with a 'double' in milliseconds
+            auto duration = chrono::duration<double, milli>(milliseconds);
+            
+            // Sleeping for the duration
+            this_thread::sleep_for(duration);
         }
     
-        bool XisTimeToRender()/**
-         *
-         * Checks if it is time to render based on the elapsed time since the last update.
-         * @return true if it is time to render, @return false otherwise.
-         *
-         */
+        /**
+         
+            Checks if it is time to render based on the elapsed time since the last update.
+            @return true if it is time to render, @return false otherwise.
+         
+        */
+        bool XisTimeToRender()
         {
             const auto & currentTime = chrono::high_resolution_clock::now();
-            const chrono::duration<double, milli> & elapsedTime = currentTime - XlastUpdateTime; // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
+            
+            // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
+            const chrono::duration<double, milli> & elapsedTime = currentTime - XlastUpdateTime;
             if (elapsedTime.count() >= frameDuration)
             {
                 XlastUpdateTime = currentTime; 
@@ -10912,15 +11022,18 @@ class Mwm_Animator
             return false; 
         }
 
-        bool YisTimeToRender()/**
-         *
-         * Checks if it is time to render a frame based on the elapsed time since the last update.
-         * @return true if it is time to render, @return false otherwise.
-         *
-         */
+        /**
+
+            Checks if it is time to render a frame based on the elapsed time since the last update.
+            @return true if it is time to render, @return false otherwise.
+
+        */
+        bool YisTimeToRender()
         {
             const auto & currentTime = chrono::high_resolution_clock::now();
-            const chrono::duration<double, milli> & elapsedTime = currentTime - YlastUpdateTime; // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
+            
+            // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
+            const chrono::duration<double, milli> & elapsedTime = currentTime - YlastUpdateTime;
             if (elapsedTime.count() >= frameDuration)
             {
                 YlastUpdateTime = currentTime; 
@@ -10930,12 +11043,13 @@ class Mwm_Animator
             return false; 
         }
         
-        bool WisTimeToRender()/**
+        /**
          *
          * Checks if it is time to render based on the elapsed time since the last update.
          * @return true if it is time to render, @return false otherwise.
          *
-         */
+        */
+        bool WisTimeToRender()
         {
             const auto & currentTime = std::chrono::high_resolution_clock::now();
             const std::chrono::duration<double, std::milli> & elapsedTime = currentTime - WlastUpdateTime; // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
@@ -10947,15 +11061,18 @@ class Mwm_Animator
             return false; 
         }
         
-        bool HisTimeToRender()/**
+        /**
          *
          * Checks if it is time to render based on the elapsed time since the last update.
          * @return true if it is time to render, @return false otherwise.
          *
-         */
+        */
+        bool HisTimeToRender()
         {
             const auto &currentTime = chrono::high_resolution_clock::now();
-            const chrono::duration<double, milli> & elapsedTime = currentTime - HlastUpdateTime; // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
+            
+            // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
+            const chrono::duration<double, milli> & elapsedTime = currentTime - HlastUpdateTime;
             if (elapsedTime.count() >= frameDuration)
             {
                 HlastUpdateTime = currentTime; 
@@ -10965,17 +11082,18 @@ class Mwm_Animator
             return false; 
         }
         
-        void config_window(const uint32_t & mask, const uint32_t & value)/**
-         *
-         * @brief Configures the window with the specified mask and value.
-         * 
-         * This function configures the window using the XCB library. It takes in a mask and a value
-         * as parameters and applies the configuration to the window.
-         * 
-         * @param mask The mask specifying which attributes to configure.
-         * @param value The value to set for the specified attributes.
-         * 
-         */
+        /**
+
+            @brief Configures the window with the specified mask and value.
+
+            This function configures the window using the XCB library. It takes in a mask and a value
+            as parameters and applies the configuration to the window.
+
+            @param mask The mask specifying which attributes to configure.
+            @param value The value to set for the specified attributes.
+
+        */
+        void config_window(const uint32_t &mask, const uint32_t &value)
         {
             xcb_configure_window(
                 conn,
@@ -10988,17 +11106,18 @@ class Mwm_Animator
             xcb_flush(conn);
         }
      
-        void config_window(const xcb_window_t & win, const uint32_t & mask, const uint32_t & value)/**
-         *
-         * @brief Configures the window with the specified mask and value.
-         * 
-         * This function configures the window using the XCB library. It takes in a mask and a value
-         * as parameters and applies the configuration to the window.
-         * 
-         * @param mask The mask specifying which attributes to configure.
-         * @param value The value to set for the specified attributes.
-         * 
-         */
+        /**
+         
+            @brief Configures the window with the specified mask and value.
+          
+            This function configures the window using the XCB library. It takes in a mask and a value
+            as parameters and applies the configuration to the window.
+          
+            @param mask The mask specifying which attributes to configure.
+            @param value The value to set for the specified attributes.
+
+        */
+        void config_window(const xcb_window_t &win, const uint32_t &mask, const uint32_t &value)
         {
             xcb_configure_window(
                 conn,
@@ -11011,17 +11130,18 @@ class Mwm_Animator
             xcb_flush(conn);
         }
         
-        void config_client(const uint32_t & mask, const uint32_t & value)/**
-         *
-         * @brief Configures the window with the specified mask and value.
-         * 
-         * This function configures the window using the XCB library. It takes in a mask and a value
-         * as parameters and applies the configuration to the window.
-         * 
-         * @param mask The mask specifying which attributes to configure.
-         * @param value The value to set for the specified attributes.
-         * 
-         */
+        /**
+
+            @brief Configures the window with the specified mask and value.
+
+            This function configures the window using the XCB library. It takes in a mask and a value
+            as parameters and applies the configuration to the window.
+
+            @param mask The mask specifying which attributes to configure.
+            @param value The value to set for the specified attributes.
+
+        */
+        void config_client(const uint32_t &mask, const uint32_t &value)
         {
             xcb_configure_window(
                 conn,
@@ -11343,7 +11463,7 @@ class __file_app__
     /* Constructor */
         __file_app__() {}
 };
-static __file_app__ *file_app;
+static __file_app__* file_app = nullptr;
 
 
 /*********************************************************************
@@ -11796,7 +11916,7 @@ class __screen_settings__
     /* Constructor */
         __screen_settings__() {}
 };
-static __screen_settings__ *screen_settings(nullptr);
+static __screen_settings__* screen_settings = nullptr;
 
 
 /*********************************************************************
@@ -12310,8 +12430,8 @@ class mv_client
 
     private:
     /* Variabels   */
-        client(*c);
-        pointer(pointer);
+        client* c = nullptr;
+        pointer pointer;
         int start_x, start_y;
         bool shouldContinue = true;
         xcb_generic_event_t(*ev);
@@ -12867,13 +12987,13 @@ class resize_client
     public:
     /* Constructor */
         /**
-         *
-         * THE REASON FOR THE 'retard_int' IS BECUSE WITHOUT IT 
-         * I CANNOT CALL THIS CLASS LIKE THIS 'resize_client(c)' 
-         * INSTEAD I WOULD HAVE TO CALL IT LIKE THIS 'resize_client rc(c)'
-         * AND NOW WITH THE 'retard_int' I CAN CALL IT LIKE THIS 'resize_client(c, 0)'
-         * 
-         */
+
+            THE REASON FOR THE 'retard_int' IS BECUSE WITHOUT IT 
+            I CANNOT CALL THIS CLASS LIKE THIS 'resize_client(c)' 
+            INSTEAD I WOULD HAVE TO CALL IT LIKE THIS 'resize_client rc(c)'
+            AND NOW WITH THE 'retard_int' I CAN CALL IT LIKE THIS 'resize_client(c, 0)'
+
+        */
         resize_client(client * & c, int retard_int)
         : c(c)
         {
@@ -13093,7 +13213,7 @@ class resize_client
                     map<client *, edge> map = wm->get_client_next_to_client(c, _edge);
                     for (const auto &pair : map)
                     {
-                        if (pair.first != nullptr)
+                        if (pair.first)
                         {
                             c2 = pair.first;
                             c2_edge = pair.second;
@@ -13781,6 +13901,7 @@ class max_win
                 endHeight,
                 MAXWIN_ANIMATION_DURATION
             );
+
             xcb_flush(conn);
         }
         
@@ -13837,6 +13958,7 @@ class max_win
                 screen->width_in_pixels + (BORDER_SIZE * 2),
                 screen->height_in_pixels + TITLE_BAR_HEIGHT + (BORDER_SIZE * 2)
             );
+
             c->set_EWMH_fullscreen_state();
         }
 
@@ -13852,7 +13974,7 @@ class max_win
                 c->max_ewmh_ogsize.height = screen->height_in_pixels / 2;
             }
             
-            if (c->max_ewmh_ogsize.x >= screen->width_in_pixels  - 1)
+            if (c->max_ewmh_ogsize.x >= screen->width_in_pixels - 1)
             {
                 c->max_ewmh_ogsize.x = ((screen->width_in_pixels / 2) - (c->max_ewmh_ogsize.width / 2) - BORDER_SIZE);
             }
@@ -13869,6 +13991,7 @@ class max_win
                 c->max_ewmh_ogsize.width, 
                 c->max_ewmh_ogsize.height
             );
+
             c->unset_EWMH_fullscreen_state();
         }
 
@@ -14549,125 +14672,125 @@ class Events
             } */
         }
 
-        // static void keyPressH(const xcb_generic_event_t *&ev)
-        // {
-        //     RE_CAST_EV(xcb_key_press_event_t);
-        //     if (e->detail == wm->key_codes.r_arrow)
-        //     {
-        //         switch (e->state)
-        //         {
-        //             case (SHIFT + CTRL + SUPER):
-        //             {
-        //                 change_desktop cd(conn);
-        //                 cd.change_with_app(change_desktop::NEXT);
-        //                 return;
-        //             }
+        /* static void keyPressH(const xcb_generic_event_t *&ev)
+        {
+            RE_CAST_EV(xcb_key_press_event_t);
+            if (e->detail == wm->key_codes.r_arrow)
+            {
+                switch (e->state)
+                {
+                    case (SHIFT + CTRL + SUPER):
+                    {
+                        change_desktop cd(conn);
+                        cd.change_with_app(change_desktop::NEXT);
+                        return;
+                    }
                     
-        //             case (CTRL + SUPER):
-        //             {
-        //                 change_desktop change_desktop(conn);
-        //                 change_desktop.change_to(change_desktop::NEXT);
-        //                 return;
-        //             }
+                    case (CTRL + SUPER):
+                    {
+                        change_desktop change_desktop(conn);
+                        change_desktop.change_to(change_desktop::NEXT);
+                        return;
+                    }
 
-        //             case SUPER:
-        //             {
-        //                 client *c = signal_manager->_window_client_map.retrive( e->event );
-        //                 if ( !c ) return;
-        //                 tile( c, TILE::RIGHT );
-        //                 return;
-        //             }
-        //         }
-        //     }
+                    case SUPER:
+                    {
+                        client *c = signal_manager->_window_client_map.retrive( e->event );
+                        if ( !c ) return;
+                        tile( c, TILE::RIGHT );
+                        return;
+                    }
+                }
+            }
             
-        //     if (e->detail == wm->key_codes.l_arrow)
-        //     {
-        //         switch (e->state)
-        //         {
-        //             case (SHIFT + CTRL + SUPER):
-        //             {
-        //                 change_desktop cd(conn);
-        //                 cd.change_with_app(change_desktop::PREV);
-        //                 return;
-        //             }
+            if (e->detail == wm->key_codes.l_arrow)
+            {
+                switch (e->state)
+                {
+                    case (SHIFT + CTRL + SUPER):
+                    {
+                        change_desktop cd(conn);
+                        cd.change_with_app(change_desktop::PREV);
+                        return;
+                    }
 
-        //             case (CTRL + SUPER):
-        //             {
-        //                 change_desktop change_desktop(conn);
-        //                 change_desktop.change_to(change_desktop::PREV);
-        //                 return;
-        //             }
+                    case (CTRL + SUPER):
+                    {
+                        change_desktop change_desktop(conn);
+                        change_desktop.change_to(change_desktop::PREV);
+                        return;
+                    }
                     
-        //             case SUPER:
-        //             {
-        //                 client *c = signal_manager->_window_client_map.retrive(e->event);
-        //                 if ( !c ) return;
-        //                 tile(c, TILE::LEFT);
-        //                 return;
-        //             }
-        //         }
-        //     }
+                    case SUPER:
+                    {
+                        client *c = signal_manager->_window_client_map.retrive(e->event);
+                        if ( !c ) return;
+                        tile(c, TILE::LEFT);
+                        return;
+                    }
+                }
+            }
             
-        //     if (e->detail == wm->key_codes.d_arrow)
-        //     {
-        //         switch (e->state)
-        //         {
-        //             case SUPER:
-        //             {
-        //                 client *c = signal_manager->_window_client_map.retrive(e->event);
-        //                 if ( !c ) return;
-        //                 tile(c, TILE::DOWN);
-        //                 return;
-        //             }
-        //         }
-        //     }
+            if (e->detail == wm->key_codes.d_arrow)
+            {
+                switch (e->state)
+                {
+                    case SUPER:
+                    {
+                        client *c = signal_manager->_window_client_map.retrive(e->event);
+                        if ( !c ) return;
+                        tile(c, TILE::DOWN);
+                        return;
+                    }
+                }
+            }
 
-        //     if ( e->detail == wm->key_codes.u_arrow )
-        //     {
-        //         switch ( e->state )
-        //         {
-        //             case SUPER:
-        //             {
-        //                 client *c = signal_manager->_window_client_map.retrive(e->event);
-        //                 if ( !c ) return;
-        //                 tile( c, TILE::UP );
-        //                 return;
-        //             }
-        //         }
-        //     }
+            if ( e->detail == wm->key_codes.u_arrow )
+            {
+                switch ( e->state )
+                {
+                    case SUPER:
+                    {
+                        client *c = signal_manager->_window_client_map.retrive(e->event);
+                        if ( !c ) return;
+                        tile( c, TILE::UP );
+                        return;
+                    }
+                }
+            }
 
-        //     /* if (e->detail == wm->key_codes.tab)
-        //     {
-        //         switch (e->state)
-        //         {
-        //             case ALT:
-        //             {
-        //                 wm->cycle_focus();
-        //                 return;
-        //             }
-        //         }
-        //     }
+            if (e->detail == wm->key_codes.tab)
+            {
+                switch (e->state)
+                {
+                    case ALT:
+                    {
+                        wm->cycle_focus();
+                        return;
+                    }
+                }
+            }
 
-        //     if (e->detail == wm->key_codes.k)
-        //     {
-        //         switch (e->state)
-        //         {
-        //             case SUPER:
-        //             {
-        //                 pid_manager->list_pids();
-        //                 event_handler->iter_and_log_map_size();
-        //                 // wm->root.set_backround_png(USER_PATH_PREFIX("/mwm_png/galaxy16-17-3840x1200.png"));
-        //                 // GET_CLIENT_FROM_WINDOW(e->event);
-        //                 // c->kill();
-        //                 // c->win.x(BORDER_SIZE);
-        //                 // c->win.y(TITLE_BAR_HEIGHT + BORDER_SIZE);
-        //                 // xcb_flush(conn);
+            if (e->detail == wm->key_codes.k)
+            {
+                switch (e->state)
+                {
+                    case SUPER:
+                    {
+                        pid_manager->list_pids();
+                        event_handler->iter_and_log_map_size();
+                        // wm->root.set_backround_png(USER_PATH_PREFIX("/mwm_png/galaxy16-17-3840x1200.png"));
+                        // GET_CLIENT_FROM_WINDOW(e->event);
+                        // c->kill();
+                        // c->win.x(BORDER_SIZE);
+                        // c->win.y(TITLE_BAR_HEIGHT + BORDER_SIZE);
+                        // xcb_flush(conn);
 
-        //                 return;
-        //             }
-        //         }
-        //     } */
-        // }
+                        return;
+                    }
+                }
+            }
+        } */
 
         /* void map_notify_handler(const xcb_generic_event_t *&ev)
         {

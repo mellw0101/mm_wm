@@ -6,6 +6,10 @@
 
 #define U32_MAX 0xFFFFFFFF
 
+#define FRAMERATE 120
+
+#define FRAMETIME (double)1000 / FRAMERATE
+
 extern xcb_connection_t *conn;
 extern xcb_screen_t *screen;
 
