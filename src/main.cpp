@@ -7594,66 +7594,8 @@ class client
             {
                 AutoTimer t("client::y_height");
 
-                win.conf_unchecked
-                (
-                    XCB_CONFIG_WINDOW_HEIGHT,
-                    (const uint32_t[])
-                    {
-                        ((height - TITLE_BAR_HEIGHT) - (BORDER_SIZE * 2))
-                    }
-                );
-                frame.conf_unchecked
-                (
-                    XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_HEIGHT,
-                    (const uint32_t[])
-                    {
-                        y,
-                        height
-                    }
-                );
-                border[left].conf_unchecked
-                (
-                    XCB_CONFIG_WINDOW_HEIGHT,
-                    (const uint32_t[])
-                    {
-                        (height - (BORDER_SIZE * 2))
-                    }
-                );
-                border[right].conf_unchecked
-                (
-                    XCB_CONFIG_WINDOW_HEIGHT,
-                    (const uint32_t[])
-                    {
-                        (height - (BORDER_SIZE * 2))
-                    }
-                );
-                border[bottom].conf_unchecked
-                (
-                    XCB_CONFIG_WINDOW_Y,
-                    (const uint32_t[])
-                    {
-                        (height - BORDER_SIZE)
-                    }
-                );
-                border[bottom_left].conf_unchecked
-                (
-                    XCB_CONFIG_WINDOW_Y,
-                    (const uint32_t[])
-                    {
-                        (height - BORDER_SIZE)
-                    }
-                );
-                border[bottom_right].conf_unchecked
-                (
-                    XCB_CONFIG_WINDOW_Y,
-                    (const uint32_t[])
-                    {
-                        (height - BORDER_SIZE)
-                    }
-                );
-
-                xcb_flush(conn);
-
+                uint32_t win_data[1] = {((height - TITLE_BAR_HEIGHT) - (BORDER_SIZE * 2))};
+                win.conf_unchecked(XCB_CONFIG_WINDOW_HEIGHT, win_data);
                 win.update
                 (
                     win.x(),
@@ -7661,6 +7603,9 @@ class client
                     win.width(),
                     ((height - TITLE_BAR_HEIGHT) - (BORDER_SIZE * 2))
                 );
+
+                uint32_t frame_data[2] = {y, height};
+                frame.conf_unchecked(XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_HEIGHT, frame_data);
                 frame.update
                 (
                     frame.x(),
@@ -7668,6 +7613,9 @@ class client
                     frame.width(),
                     height
                 );
+
+                uint32_t border_left_data[1] = {(height - (BORDER_SIZE * 2))};
+                border[left].conf_unchecked(XCB_CONFIG_WINDOW_HEIGHT, border_left_data);
                 border[left].update
                 (
                     border[left].x(),
@@ -7675,6 +7623,9 @@ class client
                     border[left].width(),
                     (height - (BORDER_SIZE * 2))
                 );
+
+                uint32_t border_right_data[1] = {(height - (BORDER_SIZE * 2))};
+                border[right].conf_unchecked(XCB_CONFIG_WINDOW_HEIGHT, border_right_data);
                 border[right].update
                 (
                     border[right].x(),
@@ -7682,6 +7633,9 @@ class client
                     border[right].width(),
                     (height - (BORDER_SIZE * 2))
                 );
+
+                uint32_t border_bottom_data[1] = {(height - BORDER_SIZE)};
+                border[bottom].conf_unchecked(XCB_CONFIG_WINDOW_Y, border_bottom_data);
                 border[bottom].update
                 (
                     border[bottom].x(),
@@ -7689,6 +7643,9 @@ class client
                     border[bottom].width(),
                     border[bottom].height()
                 );
+
+                uint32_t border_bottom_left_data[1] = {(height - BORDER_SIZE)};
+                border[bottom_left].conf_unchecked(XCB_CONFIG_WINDOW_Y, border_bottom_left_data);
                 border[bottom_left].update
                 (
                     border[bottom_left].x(),
@@ -7696,6 +7653,9 @@ class client
                     border[bottom_left].width(),
                     border[bottom_left].height()
                 );
+
+                uint32_t border_bottom_right_data[1] = {(height - BORDER_SIZE)};
+                border[bottom_right].conf_unchecked(XCB_CONFIG_WINDOW_Y, border_bottom_right_data);
                 border[bottom_right].update
                 (
                     border[bottom_right].x(),
@@ -7703,6 +7663,8 @@ class client
                     border[bottom_right].width(),
                     border[bottom_right].height()
                 );
+
+                xcb_flush(conn);                
             }
             
             void x_width_height(uint32_t x, uint32_t width, uint32_t height)
@@ -8663,11 +8625,11 @@ class Window_Manager
         win_data data;
         Key_Codes key_codes;
         
-        context_menu *context_menu = nullptr;
-        vector<client *> client_list;
-        vector<desktop *> desktop_list;
-        client *focused_client = nullptr;
-        desktop *cur_d = nullptr;
+        context_menu* context_menu = nullptr;
+        vector<client*> client_list;
+        vector<desktop*> desktop_list;
+        client* focused_client = nullptr;
+        desktop* cur_d = nullptr;
 
     /* Methods     */
         /* Main         */
@@ -9551,7 +9513,7 @@ class Window_Manager
                 });
 
                 ConnSig(screen->root, L_MOUSE_BUTTON_EVENT,
-                {   
+                {
                     unfocus();
                     if (context_menu->context_window.is_mapped())
                     {
@@ -10492,7 +10454,7 @@ class Mwm_Animator
             YAnimDuration = static_cast<const double &>(duration) / static_cast<const double &>(abs(endY - startY)); 
             WAnimDuration = static_cast<const double &>(duration) / static_cast<const double &>(abs(endWidth - startWidth));
             HAnimDuration = static_cast<const double &>(duration) / static_cast<const double &>(abs(endHeight - startHeight)); 
-            GAnimDuration = frameDuration;
+            GAnimDuration = FRAMETIME;
 
             /* START ANIMATION THREADS */
             GAnimationThread = thread(&Mwm_Animator::GFrameAnimation, this, endX, endY, endWidth, endHeight);
@@ -10544,7 +10506,7 @@ class Mwm_Animator
              * ensuring that all threads will complete at the same time.
              */
             XAnimDuration = static_cast<const double &>(duration) / static_cast<const double &>(abs(endX - startX));
-            GAnimDuration = frameDuration;
+            GAnimDuration = FRAMETIME;
 
             /* START ANIMATION THREADS */
             GAnimationThread = thread(&Mwm_Animator::GFrameAnimation_X, this, endX);
@@ -10560,7 +10522,7 @@ class Mwm_Animator
     private:
     // variabels.
         uint32_t window;
-        client * c;
+        client* c = nullptr;
         
         thread(GAnimationThread);
         thread(XAnimationThread);
@@ -10593,9 +10555,6 @@ class Mwm_Animator
         chrono::high_resolution_clock::time_point(YlastUpdateTime);
         chrono::high_resolution_clock::time_point(WlastUpdateTime);
         chrono::high_resolution_clock::time_point(HlastUpdateTime);
-        
-        const double frameRate = 120;
-        const double frameDuration = 1000.0 / frameRate; 
     
     // Methods.
         /**
@@ -11057,7 +11016,7 @@ class Mwm_Animator
             
             // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
             const chrono::duration<double, milli> & elapsedTime = currentTime - XlastUpdateTime;
-            if (elapsedTime.count() >= frameDuration)
+            if (elapsedTime.count() >= FRAMETIME)
             {
                 XlastUpdateTime = currentTime; 
                 return true; 
@@ -11078,7 +11037,7 @@ class Mwm_Animator
             
             // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
             const chrono::duration<double, milli> & elapsedTime = currentTime - YlastUpdateTime;
-            if (elapsedTime.count() >= frameDuration)
+            if (elapsedTime.count() >= FRAMETIME)
             {
                 YlastUpdateTime = currentTime; 
                 return true; 
@@ -11095,14 +11054,18 @@ class Mwm_Animator
         */
         bool WisTimeToRender()
         {
-            const auto & currentTime = std::chrono::high_resolution_clock::now();
-            const std::chrono::duration<double, std::milli> & elapsedTime = currentTime - WlastUpdateTime; // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
-            if (elapsedTime.count() >= frameDuration) 
+            const auto &currentTime = chrono::high_resolution_clock::now();
+            
+            // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
+            const chrono::duration<double, milli> &elapsedTime = (currentTime - WlastUpdateTime);
+
+            if (elapsedTime.count() >= FRAMETIME) 
             {
                 WlastUpdateTime = currentTime; 
                 return true; 
             }
-            return false; 
+
+            return false;
         }
         
         /**
@@ -11116,10 +11079,11 @@ class Mwm_Animator
             const auto &currentTime = chrono::high_resolution_clock::now();
             
             // CALCULATE ELAPSED TIME SINCE THE LAST UPDATE
-            const chrono::duration<double, milli> & elapsedTime = currentTime - HlastUpdateTime;
-            if (elapsedTime.count() >= frameDuration)
+            const chrono::duration<double, milli> &elapsedTime = (currentTime - HlastUpdateTime);
+
+            if (elapsedTime.count() >= FRAMETIME)
             {
-                HlastUpdateTime = currentTime; 
+                HlastUpdateTime = currentTime;
                 return true; 
             }
 
@@ -11137,16 +11101,10 @@ class Mwm_Animator
             @param value The value to set for the specified attributes.
 
         */
-        void config_window(const uint32_t &mask, const uint32_t &value)
+        void config_window(uint32_t mask, uint32_t value)
         {
-            xcb_configure_window(
-                conn,
-                window,
-                mask,
-                (const uint32_t[1]) {
-                    static_cast<const uint32_t &>(value)
-                }
-            );
+            uint32_t values[1] = {value}; 
+            xcb_configure_window(conn, window, mask, values);
             xcb_flush(conn);
         }
      
@@ -11161,16 +11119,10 @@ class Mwm_Animator
             @param value The value to set for the specified attributes.
 
         */
-        void config_window(const xcb_window_t &win, const uint32_t &mask, const uint32_t &value)
+        void config_window(uint32_t window, uint32_t mask, uint32_t value)
         {
-            xcb_configure_window(
-                conn,
-                win,
-                mask,
-                (const uint32_t[1]) {
-                    static_cast<const uint32_t &>(value)
-                }
-            );
+            uint32_t values[1] = {value};
+            xcb_configure_window(conn, window, mask, values);
             xcb_flush(conn);
         }
         
@@ -11185,24 +11137,11 @@ class Mwm_Animator
             @param value The value to set for the specified attributes.
 
         */
-        void config_client(const uint32_t &mask, const uint32_t &value)
+        void config_client(uint32_t mask, uint32_t value)
         {
-            xcb_configure_window(
-                conn,
-                c->win,
-                mask,
-                (const uint32_t[1]) {
-                    static_cast<const uint32_t &>(value)
-                }
-            );
-            xcb_configure_window(
-                conn,
-                c->frame,
-                mask,
-                (const uint32_t[1]) {
-                    static_cast<const uint32_t &>(value)
-                }
-            );
+            uint32_t values[1] = {value};
+            xcb_configure_window(conn, c->win, mask, values);
+            xcb_configure_window(conn, c->frame, mask, values);
             xcb_flush(conn);
         }
 
@@ -11217,25 +11156,27 @@ class __animate__
 {
     public:
     /* Methods */
-        static void window(window &__window, int __end_x, int __end_y, int __end_width, int __end_height, int __duration)
+        static void window(window &window, int end_x, int end_y, int end_width, int end_height, int duration)
         {
-            Mwm_Animator anim(__window);
-            anim.animate(
-                __window.x(),
-                __window.y(),
-                __window.width(),
-                __window.height(),
-                __end_x,
-                __end_y,
-                __end_width,
-                __end_height,
-                __duration
+            Mwm_Animator anim(window);
+            anim.animate
+            (
+                window.x(),
+                window.y(),
+                window.width(),
+                window.height(),
+                end_x,
+                end_y,
+                end_width,
+                end_height,
+                duration
             );
-            __window.update(__end_x, __end_y, __end_width, __end_height);
+
+            window.update(end_x, end_y, end_width, end_height);
         }
 };
 
-void animate(client * & c, const int & endX, const int & endY, const int & endWidth, const int & endHeight, const int & duration)
+void animate(client* const &c, int endX, int endY, int endWidth, int endHeight, int duration)
 {
     if (c == nullptr) return;
 
@@ -11255,7 +11196,7 @@ void animate(client * & c, const int & endX, const int & endY, const int & endWi
     c->update();
 }
 
-void animate_client(client *const &c, int endX, int endY, int endWidth, int endHeight, int duration)
+void animate_client(client* const &c, int endX, int endY, int endWidth, int endHeight, int duration)
 {
     if (c == nullptr) return;
 
@@ -11519,7 +11460,7 @@ class __screen_settings__
 {
     private:
     /* Methods     */
-        void change_refresh_rate(xcb_connection_t *conn, int desired_width, int desired_height, int desired_refresh)
+        void _change_refresh_rate(xcb_connection_t* conn, int desired_width, int desired_height, int desired_refresh)
         {
             // Initialize RandR and get screen resources
             // This is highly simplified and assumes you have the output and CRTC IDs
@@ -11541,7 +11482,7 @@ class __screen_settings__
             free(res_reply);
         }
     
-        vector<xcb_randr_mode_t> find_mode()
+        vector<xcb_randr_mode_t> _find_mode()
         {
             vector<xcb_randr_mode_t>(mode_vec);
 
@@ -11571,11 +11512,11 @@ class __screen_settings__
         }
         
         /**
-         *
-         * @brief Function to calculate the refresh rate from mode info
-         *
-         */
-        static float calculate_refresh_rate(const xcb_randr_mode_info_t *mode_info)
+
+            @brief Function to calculate the refresh rate from mode info
+
+        */
+        static float _calculate_refresh_rate(const xcb_randr_mode_info_t* mode_info)
         {
             if (mode_info->htotal && mode_info->vtotal)
             {
@@ -11585,7 +11526,7 @@ class __screen_settings__
             return 0.0f;
         }
 
-        vector<pair<xcb_randr_mode_t, string>> get_avalible_resolutions__()
+        vector<pair<xcb_randr_mode_t, string>> _get_avalible_resolutions()
         {
             vector<pair<xcb_randr_mode_t, string>>(results);
             xcb_randr_get_screen_resources_current_cookie_t res_cookie;
@@ -11640,7 +11581,7 @@ class __screen_settings__
 
             for (int i = 0; i < mode_count; i++) // Iterate through all modes
             {
-                string s = to_string(mode_info[i].width) + "x" + to_string(mode_info[i].height) + " " + to_string(calculate_refresh_rate(&mode_info[i])) + " Hz";
+                string s = to_string(mode_info[i].width) + "x" + to_string(mode_info[i].height) + " " + to_string(_calculate_refresh_rate(&mode_info[i])) + " Hz";
 
                 #ifdef ARMV8_BUILD
                     loutI << s << loutEND;
@@ -11657,7 +11598,7 @@ class __screen_settings__
             return results;
         }
 
-        void change_resolution()
+        void _change_resolution()
         {
             xcb_randr_get_screen_resources_current_cookie_t res_cookie;
             xcb_randr_get_screen_resources_current_reply_t *res_reply;
@@ -11700,10 +11641,10 @@ class __screen_settings__
             }
 
             xcb_randr_mode_t mode_id;
-            vector<xcb_randr_mode_t>(mode_vector)(find_mode());
+            vector<xcb_randr_mode_t>(mode_vector)(_find_mode());
             for (int i(0); i < mode_vector.size(); ++i)
             {
-                if (mode_vector[i] == get_current_resolution__())
+                if (mode_vector[i] == _get_current_resolution())
                 {
                     if (i == (mode_vector.size() - 1))
                     {
@@ -11745,7 +11686,7 @@ class __screen_settings__
             free(res_reply);
         }
         
-        xcb_randr_mode_t get_current_resolution__()
+        xcb_randr_mode_t _get_current_resolution()
         {
             xcb_randr_mode_t mode_id;
             xcb_randr_get_screen_resources_current_cookie_t res_cookie = xcb_randr_get_screen_resources_current(conn, screen->root);
@@ -11807,7 +11748,7 @@ class __screen_settings__
             return mode_id;
         }
 
-        string get_current_resolution_string__()
+        string _get_current_resolution_string()
         {
             string result;
             xcb_randr_get_screen_resources_current_cookie_t res_cookie;
@@ -11864,7 +11805,7 @@ class __screen_settings__
             {
                 if (mode_info[i].id == crtc_info_reply->mode)
                 {
-                    result = to_string(mode_info[i].width) + "x" + to_string(mode_info[i].height) + " " + to_string(calculate_refresh_rate(&mode_info[i])) + " Hz";
+                    result = to_string(mode_info[i].width) + "x" + to_string(mode_info[i].height) + " " + to_string(_calculate_refresh_rate(&mode_info[i])) + " Hz";
                     break;
                 }
             }
@@ -11952,9 +11893,9 @@ class __screen_settings__
 
         void init()
         {
-            _avalible_resolutions     = get_avalible_resolutions__();
-            _current_resolution       = get_current_resolution__();
-            _current_resoluton_string = get_current_resolution_string__();
+            _avalible_resolutions     = _get_avalible_resolutions();
+            _current_resolution       = _get_current_resolution();
+            _current_resoluton_string = _get_current_resolution_string();
         }
 
     /* Constructor */
