@@ -9410,6 +9410,7 @@ class Window_Manager
                     if (!c) return;
                     c->kill();
                     remove_client(c);
+                    check_unclosed_clients();
                 );
 
                 ConnSig(screen->root, L_MOUSE_BUTTON_EVENT,
