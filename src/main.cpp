@@ -9145,6 +9145,19 @@ class Window_Manager
                 delete c;
             }
 
+            void check_unclosed_clients()
+            {
+                for (client* const& c : client_list)
+                {
+                    if (c->frame.is_mapped()
+                    && !c->win.is_mapped())
+                    {
+                        c->kill();
+                        remove_client(c);
+                    }
+                }
+            }  
+
         /* Desktop      */
             void create_new_desktop(uint16_t n)
             {
@@ -9943,7 +9956,7 @@ class __status_bar__
                 MAP
             );
 
-            _w[SHUTDOWN_DROPDOWN].create_window(screen->root, 0, 0, 100, 60, BLACK);
+            _w[SHUTDOWN_DROPDOWN].create_window(screen->root, (WIFI_WINDOW_X - BUTTON_SIZE), 20, 100, 60, BLACK);
 
             ConnSig(_w[SHUTDOWN], L_MOUSE_BUTTON_EVENT,
                 if (_w[SHUTDOWN_DROPDOWN].is_mapped())
@@ -10108,13 +10121,7 @@ class __status_bar__
         {
             long now(time({}));
             char buf[80];
-            strftime
-            (
-                buf,
-                size(buf),
-                "%Y-%m-%d %H:%M:%S",
-                localtime(&now)
-            );
+            strftime(buf, size(buf), "%Y-%m-%d %H:%M:%S", localtime(&now));
 
             return string(buf);
         }
