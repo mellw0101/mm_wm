@@ -10337,10 +10337,10 @@ class Mwm_Animator
 
     /* Destructor   */
         /**
-          
-          @brief Destructor to ensure the animation threads are stopped when the object is destroyed.
-          
-         */
+
+            @brief Destructor to ensure the animation threads are stopped when the object is destroyed.
+
+        */
         ~Mwm_Animator()
         {
             stopAnimations();
@@ -10348,20 +10348,20 @@ class Mwm_Animator
     
     /* Methods      */
         /**
-         
-          @brief Animates the position and size of an object from a starting point to an ending point.
-          
-          @param startX The starting X coordinate.
-          @param startY The starting Y coordinate.
-          @param startWidth The starting width.
-          @param startHeight The starting height.
-          @param endX The ending X coordinate.
-          @param endY The ending Y coordinate.
-          @param endWidth The ending width.
-          @param endHeight The ending height.
-          @param duration The duration of the animation in milliseconds.
-         
-         */
+
+            @brief Animates the position and size of an object from a starting point to an ending point.
+
+            @param startX The starting X coordinate.
+            @param startY The starting Y coordinate.
+            @param startWidth The starting width.
+            @param startHeight The starting height.
+            @param endX The ending X coordinate.
+            @param endY The ending Y coordinate.
+            @param endWidth The ending width.
+            @param endHeight The ending height.
+            @param duration The duration of the animation in milliseconds.
+
+        */
         void animate(int startX, int startY, int startWidth, int startHeight, int endX, int endY, int endWidth, int endHeight, int duration) 
         {
             stopAnimations(); // ENSURE ANY EXISTING ANIMATION IS STOPPED
@@ -10478,44 +10478,48 @@ class Mwm_Animator
 
         void animate_client_x(int startX, int endX, int duration)
         {
-            /* ENSURE ANY EXISTING ANIMATION IS STOPPED */
+            // ENSURE ANY EXISTING ANIMATION IS STOPPED 
             stopAnimations();
             
-            /* INITILIZE CLASS VARIABELS WITH INPUT VALUES */
+            // INITILIZE CLASS VARIABELS WITH INPUT VALUES
             currentX = startX;
 
             int steps = duration; 
 
             /**
-             * @brief Calculate if the step is positive or negative for each property.
-             *
-             * The variables @param stepX, stepY, stepWidth, stepHeight are always set to either 1 or -1.
-             * This is determined by dividing the absolute value of the difference between the start and end values
-             * by the difference itself. This results in a value of 1 or -1, which is used to determine if the animation 
-             * is moving in a positive (increasing) or negative (decreasing) direction for each property.
-             */
+    
+                @brief Calculate if the step is positive or negative for each property.
+
+                The variables @param stepX, stepY, stepWidth, stepHeight are always set to either 1 or -1.
+                This is determined by dividing the absolute value of the difference between the start and end values
+                by the difference itself. This results in a value of 1 or -1, which is used to determine if the animation 
+                is moving in a positive (increasing) or negative (decreasing) direction for each property.
+    
+            */
             stepX = abs(endX - startX) / (endX - startX);
 
             /**
-             * @brief CALCULATE THE DURATION FOR EACH STEP BASED ON THE TOTAL ANIMATION DURATION AND THE ABSOLUTE VALUE OF THE LENGTH OF EACH ANIMATION 
-             * 
-             * @param XAnimDuration, YAnimDuration, WAnimDuration, HAnimDuration represent the time each step takes to iterate one pixel for each respective thread.
-             * 
-             * The duration for each step is calculated by dividing the total animation duration by the absolute value of the lengt on the respective animation.
-             * This ensures that each thread will iterate each pixel from start to end value,
-             * ensuring that all threads will complete at the same time.
-             */
+    
+                @brief CALCULATE THE DURATION FOR EACH STEP BASED ON THE TOTAL ANIMATION DURATION AND THE ABSOLUTE VALUE OF THE LENGTH OF EACH ANIMATION 
+
+                @param XAnimDuration, YAnimDuration, WAnimDuration, HAnimDuration represent the time each step takes to iterate one pixel for each respective thread.
+
+                The duration for each step is calculated by dividing the total animation duration by the absolute value of the lengt on the respective animation.
+                This ensures that each thread will iterate each pixel from start to end value,
+                ensuring that all threads will complete at the same time.
+    
+            */
             XAnimDuration = static_cast<const double &>(duration) / static_cast<const double &>(abs(endX - startX));
             GAnimDuration = FRAMETIME;
 
-            /* START ANIMATION THREADS */
+            // START ANIMATION THREADS
             GAnimationThread = thread(&Mwm_Animator::GFrameAnimation_X, this, endX);
             XAnimationThread = thread(&Mwm_Animator::CliXAnimation, this, endX);
 
-            /* WAIT FOR ANIMATION TO COMPLETE */
+            // WAIT FOR ANIMATION TO COMPLETE
             this_thread::sleep_for(chrono::milliseconds(duration));
 
-            /* STOP THE ANIMATION */
+            // STOP THE ANIMATION
             stopAnimations();
         }
     
@@ -10568,7 +10572,7 @@ class Mwm_Animator
             @param endX The desired 'x' position of the window.
 
         */
-        void XAnimation(const int & endX)
+        void XAnimation(int endX)
         {
             XlastUpdateTime = chrono::high_resolution_clock::now();
             while (true)
@@ -10728,7 +10732,7 @@ class Mwm_Animator
             @param endWidth The desired 'height' of the window.
 
         */
-        void HAnimation(const int & endHeight)
+        void HAnimation(int endHeight)
         {
             HlastUpdateTime = chrono::high_resolution_clock::now();
             while (true)
