@@ -5647,14 +5647,36 @@ class window
                 xcb_flush(conn);
             }
 
-            void conf_checked(uint32_t mask, const void* data)
+            void conf_checked(uint32_t mask, const void* data, const string &error_msg)
             {
-                XCB::configure_window_checked(_window, mask, data);
+                xcb_void_cookie_t cookie = xcb_configure_window_checked
+                (
+                    conn,
+                    _window,
+                    mask,
+                    data
+                );
+
+                xcb_flush(conn);
+                xcb_generic_error_t* error = xcb_request_check(conn, cookie);
+                if (error)
+                {
+                    loutE << error_msg << " error_code" << error->error_code << loutEND;
+                    free(error);
+                }
             }
 
-            void conf_unchecked(uint32_t __mask, const void *__data)
+            void conf_unchecked(uint32_t mask, const void* data)
             {
-                XCB::configure_window(_window, __mask, __data);
+                xcb_configure_window
+                (
+                    conn,
+                    _window,
+                    mask,
+                    data
+                );
+
+                xcb_flush(conn);
             }
 
             /* Size_pos  */
@@ -5679,7 +5701,7 @@ class window
                         return _height;
                     }
 
-                    void geo(int16_t *x = nullptr, int16_t *y = nullptr, uint16_t *width = nullptr, uint16_t *height = nullptr)
+                    void geo(int16_t* x = nullptr, int16_t* y = nullptr, uint16_t* width = nullptr, uint16_t* height = nullptr)
                     {
                         AutoTimer timer(__func__);
 
@@ -5691,24 +5713,40 @@ class window
                             return;
                         }
 
-                        if (x      != nullptr) *x      = reply->x;
-                        if (y      != nullptr) *y      = reply->y;
-                        if (width  != nullptr) *width  = reply->width;
-                        if (height != nullptr) *height = reply->height;
+                        if (x     ) *x      = reply->x;
+                        if (y     ) *y      = reply->y;
+                        if (width ) *width  = reply->width;
+                        if (height) *height = reply->height;
 
                         free(reply);
                     }
                 
                 void x(uint32_t x)
                 {
-                    xcb_configure_window(conn, _window, XCB_CONFIG_WINDOW_X, (uint32_t[]){x});
+                    uint32_t data[1] = {x};
+                    xcb_configure_window
+                    (
+                        conn,
+                        _window,
+                        XCB_CONFIG_WINDOW_X,
+                        data
+                    );
+
                     _x = x;
                     xcb_flush(conn);
                 }
                 
                 void y(uint32_t y)
                 {
-                    xcb_configure_window(conn, _window, XCB_CONFIG_WINDOW_Y, (uint32_t[]){y});
+                    uint32_t data[1] = {y};
+                    xcb_configure_window
+                    (
+                        conn,
+                        _window,
+                        XCB_CONFIG_WINDOW_Y,
+                        data
+                    );
+                    
                     _y = y;
                     xcb_flush(conn);
                 }
@@ -6510,7 +6548,7 @@ class window
                 }
             
             /* Png    */
-                void create_png_from_vector_bitmap(const char *file_name, const vector<vector<bool>> &bitmap)
+                void create_png_from_vector_bitmap(const char* file_name, const vector<vector<bool>> &bitmap)
                 {
                     AutoTimer t(__func__);
 
@@ -6561,10 +6599,11 @@ class window
                         {
                             row[x] = bitmap[y][x] ? 0xFF : 0x00;
                         }
+
                         png_write_row(png_ptr, row);
                     }
-                    delete[] row;
-                    
+
+                    delete[] row;                    
                     png_write_end(png_ptr, NULL);
                     fclose(fp);
                     png_destroy_write_struct(&png_ptr, &info_ptr);
@@ -7088,7 +7127,8 @@ class client
                 make_max_button();
                 make_min_button();
 
-                if (BORDER_SIZE > 0) {
+                if (BORDER_SIZE > 0)
+                {
                     make_borders();
                 }
             }
@@ -7114,17 +7154,15 @@ class client
                 width  = frame.width();
                 height = frame.height();
 
-                win.send_event
-                (
-                    XCB_EVENT_MASK_STRUCTURE_NOTIFY,
-                    (const uint32_t[])
-                    {
-                        (static_cast<uint32_t>(x) + BORDER_SIZE),
-                        (static_cast<uint32_t>(y) + (TITLE_BAR_HEIGHT + BORDER_SIZE)),
-                        win.width(),
-                        win.height()
-                    }
-                );
+                uint32_t data[4] =
+                {
+                    (static_cast<uint32_t>(x) + BORDER_SIZE),
+                    (static_cast<uint32_t>(y) + (TITLE_BAR_HEIGHT + BORDER_SIZE)),
+                    win.width(),
+                    win.height()
+                };
+
+                win.send_event(XCB_EVENT_MASK_STRUCTURE_NOTIFY, data);
                 xcb_flush(conn);
             }
             
@@ -7177,7 +7215,7 @@ class client
             {
                 win.x(BORDER_SIZE);
                 win.y(TITLE_BAR_HEIGHT + BORDER_SIZE);
-                FLUSH_X();
+                xcb_flush(conn);
             }
 
             #define TITLE_REQ_DRAW  (uint32_t)1 << 0
@@ -7199,83 +7237,72 @@ class client
 
         
         /* Config    */
-            void x_y(uint32_t __x, uint32_t __y)
+            void x_y(uint32_t x, uint32_t y)
             {
                 AutoTimer t("client::x_y");
 
-                const uint32_t newX = __x, newY = __y;
-                frame.conf_checked
-                (
-                    XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y,
-                    (const uint32_t[2])
-                    {
-                        newX,
-                        newY
-                    }
-                );
+                uint32_t data[2] = {x, y};
+                frame.conf_unchecked(XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, data);
+
                 frame.update
                 (
-                    newX,
-                    newY,
+                    x,
+                    y,
                     frame.width(),
                     frame.height()
                 );
-                update();
 
+                update();
                 xcb_flush(conn);
             }
             
-            void _x(int16_t __x)
+            void _x(int16_t x)
             {
-                /* frame.x(x); */
                 AutoTimer t("client::_x");
 
-                const uint32_t newX = __x;
-                xcb_configure_window_checked
+                uint32_t data[1] = {static_cast<uint32_t>(x)};
+                xcb_configure_window
                 (
                     conn,
                     frame,
                     XCB_CONFIG_WINDOW_X,
-                    (const uint32_t[1])
-                    {
-                        newX
-                    }
+                    data
                 );
-                xcb_flush(conn);
 
+                xcb_flush(conn);
                 frame.update
                 (
-                    newX,
+                    x,
                     frame.y(),
                     frame.width(),
                     frame.height()
                 );
+
                 update();
             }
 
-            void _y(int16_t __y)
+            void _y(int16_t y)
             {
                 AutoTimer t("client::_y");
 
-                const uint32_t newY = __y;
-                XCB::configure_window_checked
+                uint32_t data[1] = {static_cast<uint32_t>(y)};
+                xcb_configure_window
                 (
+                    conn,
                     frame,
                     XCB_CONFIG_WINDOW_Y,
-                    (const uint32_t[1])
-                    {
-                        newY
-                    }
+                    data
                 );
-                XCB::flush();
-                
+
+                xcb_flush(conn);                
                 frame.update
                 (
                     frame.x(),
-                    __y,
+                    y,
                     frame.width(),
                     frame.height()
                 );
+
                 update();
             }
 
