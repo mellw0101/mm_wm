@@ -10024,6 +10024,7 @@ class __status_bar__
             });
 
             _w[_AUDIO].send_event(XCB_EVENT_MASK_EXPOSURE);
+            _w[_AUDIO].highlight_on_hover();
 
             ConnSig(_w[_AUDIO], L_MOUSE_BUTTON_EVENT,
             {
@@ -10042,16 +10043,6 @@ class __status_bar__
                 }
             });
 
-            ConnSig(_w[_AUDIO], XCB_ENTER_NOTIFY,
-            {
-                _w[_AUDIO].change_backround_color(WHITE);
-            });
-
-            ConnSig(_w[_AUDIO], XCB_LEAVE_NOTIFY,
-            {
-                _w[_AUDIO].change_backround_color(DARK_GREY);
-            });
-
             _w[SHUTDOWN].create_window
             (
                 _w[_BAR],
@@ -10067,7 +10058,7 @@ class __status_bar__
             _w[SHUTDOWN_DROPDOWN].create_window
             (
                 screen->root,
-                ((WIFI_WINDOW_X - 50 - BUTTON_SIZE) - (100 / 2)),
+                ((WIFI_WINDOW_X - 50 - BUTTON_SIZE) - (20 / 2) - (100 / 2)),
                 20,
                 100,
                 60,
@@ -10277,9 +10268,17 @@ class __status_bar__
     public:
         string get_time_and_date()
         {
+            AutoTimer t{"__status_bar__::get_time_and_date"};
+
             long now(time({}));
             char buf[80];
-            strftime(buf, size(buf), "%Y-%m-%d %H:%M:%S", localtime(&now));
+            strftime
+            (
+                buf,
+                size(buf),
+                "%Y-%m-%d %H:%M:%S",
+                localtime(&now)
+            );
 
             return string(buf);
         }
