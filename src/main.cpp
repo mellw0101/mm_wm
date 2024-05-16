@@ -5988,7 +5988,7 @@ class window
                     conn,
                     __str.length(),
                     _window,
-                    font_gc,
+                    _font_gc,
                     __x,
                     __y,
                     __str.c_str()
@@ -6007,7 +6007,7 @@ class window
                     conn,
                     slen(str),
                     _window, 
-                    font_gc,
+                    _font_gc,
                     x,
                     y,
                     str
@@ -6016,26 +6016,28 @@ class window
                 xcb_flush(conn);
             }
             
-            void draw_text_auto_color(const char *__str, int16_t __x, int16_t __y, int __text_color = WHITE, int __backround_color = 0, const char *__font_name = DEFAULT_FONT)
+            void draw_text_auto_color(const char* str, int16_t x, int16_t y, int text_color = WHITE, int backround_color = 0, const char* font_name = DEFAULT_FONT)
             {
                 AutoTimer t(__func__);
 
                 if (_font_gc_good == false)
                 {
-                    get_font(__font_name);
-                    if (__backround_color == 0) __backround_color = _color;
-                    create_font_gc(__text_color, __backround_color, font);
+                    get_font(font_name);
+                    if (backround_color == 0) backround_color = _color;
+                    create_font_gc(text_color, backround_color, font);
                 }
                 
-                xcb_image_text_8(
+                xcb_image_text_8
+                (
                     conn,
-                    slen(__str),
+                    slen(str),
                     _window,
-                    font_gc,
-                    __x,
-                    __y,
-                    __str
+                    _font_gc,
+                    x,
+                    y,
+                    str
                 );
+
                 xcb_flush(conn);
             }
             
@@ -6053,31 +6055,33 @@ class window
              *       ALSO IF YOU ONLY WANT AUTO COLOR NOT CENTERING USE 'draw_text_auto_color' FUNCTION
              *
             */
-            void draw_acc(const char *__str, int __text_color = WHITE, int __backround_color = 0, const char *__font_name = DEFAULT_FONT)
+            void draw_acc(const char* str, int text_color = WHITE, int backround_color = 0, const char* font_name = DEFAULT_FONT)
             {
                 AutoTimer t(__func__);
 
                 if (_font_gc_good == false)
                 {
-                    get_font(__font_name);
-                    if (__backround_color == 0) __backround_color = _color;
-                    if (__backround_color == WHITE) __text_color = BLACK;
-                    create_font_gc(__text_color, __backround_color, font);
+                    get_font(font_name);
+                    if (backround_color == 0) backround_color = _color;
+                    if (backround_color == WHITE) text_color = BLACK;
+                    create_font_gc(text_color, backround_color, font);
                 }
                 
-                xcb_image_text_8(
+                xcb_image_text_8
+                (
                     conn,
-                    slen(__str),
+                    slen(str),
                     _window,
-                    font_gc,
-                    CENTER_TEXT(_width, slen(__str)),
+                    _font_gc,
+                    CENTER_TEXT(_width, slen(str)),
                     CENTER_TEXT_Y(_height),
-                    __str
+                    str
                 );
+
                 xcb_flush(conn);
             }
 
-            void draw_text_16(const char *str, int text_color, int background_color, const char *font_name, int16_t x, int16_t y)
+            void draw_text_16(const char* str, int text_color, int background_color, const char* font_name, int16_t x, int16_t y)
             {
                 AutoTimer t(__func__);
 
@@ -6087,15 +6091,17 @@ class window
                 int len;
                 xcb_char2b_t *char2b_str = to_char2b(str, &len);
 
-                xcb_image_text_16(
+                xcb_image_text_16
+                (
                     conn,
                     len,
                     _window,
-                    font_gc,
+                    _font_gc,
                     x,
                     y,
                     char2b_str
                 );
+
                 xcb_flush(conn);
                 free(char2b_str);
             }
@@ -6116,7 +6122,7 @@ class window
                     conn,
                     len,
                     _window,
-                    font_gc,
+                    _font_gc,
                     __x,
                     __y,
                     char2b_str
@@ -6145,7 +6151,7 @@ class window
                     conn,
                     len,
                     _window,
-                    font_gc,
+                    _font_gc,
                     CENTER_TEXT(_width, slen(__str)),
                     CENTER_TEXT_Y(_height),
                     char2b_str
@@ -6338,21 +6344,15 @@ class window
     private:
     /* Variables   */
         /* Main */
-            /* uint8_t        _depth; */
             uint32_t       _window;
             uint32_t       _parent;
             int16_t        _x;
             int16_t        _y;
             uint16_t       _width;
             uint16_t       _height;
-            /* uint16_t       _border_width;
-            uint16_t       __class;
-            uint32_t       _visual;
-            uint32_t       _value_mask;
-            const void    *_value_list; */
         
         uint32_t _gc;
-        xcb_gcontext_t font_gc;
+        uint32_t _font_gc;
         xcb_font_t     font;
         xcb_pixmap_t   pixmap;
         string _name{};
@@ -6365,7 +6365,6 @@ class window
         FixedArray<uint32_t, 4> _border{};
 
         uint8_t  _override_redirect = 0;
-        uint8_t _bit_state = 0;
         bool _font_gc_good = false;
 
         /* vector<pair<uint8_t, int>> _ev_id_vec; */
@@ -6398,10 +6397,9 @@ class window
             {
                 AutoTimer t("window::make_window");
 
-                if ((_window = XCB::gen_Xid()) == U32_MAX)
+                if ((_window = xcb_generate_id(conn)) == U32_MAX)
                 {
                     loutEWin << "Could not generate id for window" << '\n';
-                    _bit_state &= ~(1 << Xid_gen_success);
                     return;
                 }
 
@@ -6414,24 +6412,43 @@ class window
                     _width,
                     _height
                 );
-
-                /** NOTE: Setting @p Xid_gen_success bit of @class member variable @p '_bit_state' */
-                _bit_state |= (1 << Xid_gen_success);
             }
 
-            void clear_window(uint32_t __window)
+            void clear_window(uint32_t window)
             {
-                XCB::clear_area(__window, 20, 20);
+                XCB::clear_area(window, 20, 20);
             }
 
-            void change_attributes(uint32_t __mask, const void *__data)
+            void change_attributes(uint32_t mask, const void* data)
             {
-                XCB::change_window_attributes(_window, __mask, __data);
+                xcb_change_window_attributes
+                (
+                    conn,
+                    _window,
+                    mask,
+                    data
+                );
+
+                xcb_flush(conn);
             }
 
-            void change_attributes_checked(uint32_t __mask, const void *__data)
+            void change_attributes_checked(uint32_t mask, const void* data, const string &error_msg)
             {
-                XCB::change_window_attributes_checked(_window, __mask, __data);
+                xcb_void_cookie_t cookie = xcb_change_window_attributes_checked
+                (
+                    conn,
+                    _window,
+                    mask,
+                    data
+                );
+
+                xcb_flush(conn);
+                xcb_generic_error_t* error = xcb_request_check(conn, cookie);
+                if (error)
+                {
+                    loutE << error_msg << " error_code" << error->error_code << loutEND;
+                    free(error);  
+                }
             }
 
         /* Create     */
@@ -6440,6 +6457,7 @@ class window
                 {
                     AutoTimer t(__func__);
                     
+                    uint32_t values[3] = {screen->black_pixel, screen->white_pixel, 0};
                     _gc = xcb_generate_id(conn);
                     xcb_create_gc
                     (
@@ -6447,13 +6465,9 @@ class window
                         _gc,
                         _window,
                         GC_MASK,
-                        (const uint32_t[3])
-                        {
-                            screen->black_pixel,
-                            screen->white_pixel,
-                            0
-                        }
+                        values
                     );
+
                     xcb_flush(conn);
                 }
 
@@ -6461,9 +6475,16 @@ class window
                 {
                     AutoTimer t(__func__);
 
-                    font_gc = xcb_generate_id(conn);
+                    _font_gc = xcb_generate_id(conn);
                     uint32_t data[3] = {Color->get(text_color), Color->get(backround_color), font};
-                    XCB::create_gc(_window, font_gc, GC_FONT_MASK, data);
+                    xcb_create_gc
+                    (
+                        conn,
+                        _font_gc,
+                        _window,
+                        GC_FONT_MASK,
+                        data
+                    );
 
                     xcb_flush(conn);
                     _font_gc_good = true;
@@ -6484,6 +6505,7 @@ class window
                         _width,
                         _height
                     );
+
                     xcb_flush(conn);
                 }
             
@@ -6686,10 +6708,11 @@ class window
 
         /* Font       */
             /**
+
                 @brief Calculates the total number of Unicode characters in a UTF-8 string.
                     This function helps in determining the exact number of xcb_char2b_t
                     structures required to represent the string.
- 
+
                 @param input Pointer to the UTF-8 encoded string.
                 @return The total number of Unicode characters in the input string.
              
