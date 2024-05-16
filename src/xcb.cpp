@@ -126,7 +126,7 @@ namespace XCB
      
       @p XCB_INPUT_FOCUS_FOLLOW_KEYBOARD NOTE: This is experemental
       
-     */
+    */
     void set_focus_input(uint32_t __window, uint8_t __revert_to)
     {
         xcb_set_input_focus

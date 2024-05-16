@@ -6002,7 +6002,8 @@ class window
 
                 get_font(font_name);
                 create_font_gc(text_color, backround_color, font);
-                xcb_image_text_8(
+                xcb_image_text_8
+                (
                     conn,
                     slen(str),
                     _window, 
@@ -6011,6 +6012,7 @@ class window
                     y,
                     str
                 );
+
                 xcb_flush(conn);
             }
             
@@ -6050,7 +6052,7 @@ class window
              * NOTE: THESE ARE MUTEBLE JUST TYPE IN ALL THE PARAMS WHEN MAKING A CALL TO OVERIDE AUTO FUNCTIONALITY
              *       ALSO IF YOU ONLY WANT AUTO COLOR NOT CENTERING USE 'draw_text_auto_color' FUNCTION
              *
-             */
+            */
             void draw_acc(const char *__str, int __text_color = WHITE, int __backround_color = 0, const char *__font_name = DEFAULT_FONT)
             {
                 AutoTimer t(__func__);
@@ -6062,7 +6064,6 @@ class window
                     if (__backround_color == WHITE) __text_color = BLACK;
                     create_font_gc(__text_color, __backround_color, font);
                 }
-
                 
                 xcb_image_text_8(
                     conn,
@@ -6456,25 +6457,15 @@ class window
                     xcb_flush(conn);
                 }
 
-                void create_font_gc(int __text_color, int __backround_color, xcb_font_t __font)
+                void create_font_gc(int text_color, int backround_color, xcb_font_t font)
                 {
                     AutoTimer t(__func__);
 
-                    font_gc = XCB::gen_Xid();
-                    XCB::create_gc
-                    (
-                        _window,
-                        font_gc,
-                        GC_FONT_MASK,
-                        (const uint32_t[3])
-                        {
-                            Color->get(__text_color),
-                            Color->get(__backround_color),
-                            font
-                        }
-                    );
-                    XCB::flush();
+                    font_gc = xcb_generate_id(conn);
+                    uint32_t data[3] = {Color->get(text_color), Color->get(backround_color), font};
+                    XCB::create_gc(_window, font_gc, GC_FONT_MASK, data);
 
+                    xcb_flush(conn);
                     _font_gc_good = true;
                 }
             
@@ -6619,21 +6610,21 @@ class window
                 }
 
         /* Get        */
-            void get_font(const char *font_name)
+            void get_font(const char* font_name)
             {
                 AutoTimer timer(__func__);
                 font = XCB::open_and_get_font_id(font_name);
             }
         
         /* Background */
-            void change_back_pixel(uint32_t __pixel)
+            void change_back_pixel(uint32_t pixel)
             {
                 AutoTimer timer(__func__);
-                XCB::change_back_pixel(_window, __pixel);
+                XCB::change_back_pixel(_window, pixel);
             }
 
         /* Borders    */
-            void create_border_window(BORDER __border, int __color, uint32_t __x, uint32_t __y, uint32_t __width, uint32_t __height)
+            void create_border_window(BORDER border, int color, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
             {
                 AutoTimer timer(__func__);
 
@@ -6648,20 +6639,20 @@ class window
                 (
                     window,
                     _window,
-                    __x,
-                    __y,
-                    __width,
-                    __height
+                    x,
+                    y,
+                    width,
+                    height
                 );
 
-                XCB::change_back_pixel(window, Color->get(__color));
+                XCB::change_back_pixel(window, Color->get(color));
                 xcb_map_window(conn, window);
                 xcb_flush(conn);
 
-                if (__border == UP   ) _border[0] = window;
-                if (__border == DOWN ) _border[1] = window;
-                if (__border == LEFT ) _border[2] = window;
-                if (__border == RIGHT) _border[3] = window;
+                if (border == UP   ) _border[0] = window;
+                if (border == DOWN ) _border[1] = window;
+                if (border == LEFT ) _border[2] = window;
+                if (border == RIGHT) _border[3] = window;
             }
             
             #define CREATE_UP_BORDER(__size, __color)    create_border_window(UP,    __color, 0, 0, _width, __size)
@@ -6683,14 +6674,14 @@ class window
                 ); \
             } while(0)
             
-            void make_border_window(int __border, uint32_t __size, int __color)
+            void make_border_window(int border, uint32_t size, int color)
             {
                 AutoTimer t(__func__);
 
-                if (__border & UP   ) CREATE_UP_BORDER(__size, __color);
-                if (__border & DOWN ) CREATE_DOWN_BORDER(__size, __color);
-                if (__border & LEFT ) CREATE_LEFT_BORDER(__size, __color);
-                if (__border & RIGHT) CREATE_RIGHT_BORDER(__size, __color);
+                if (border & UP   ) CREATE_UP_BORDER(size, color);
+                if (border & DOWN ) CREATE_DOWN_BORDER(size, color);
+                if (border & LEFT ) CREATE_LEFT_BORDER(size, color);
+                if (border & RIGHT) CREATE_RIGHT_BORDER(size, color);
             }
 
         /* Font       */
@@ -6779,7 +6770,7 @@ class window
                     the decoded character.
 
             */
-            uint32_t decode_utf8_char(const char **input)
+            uint32_t decode_utf8_char(const char** input)
             {
                 const unsigned char *str = (const unsigned char *)*input;
                 uint32_t codepoint = 0;
@@ -6827,7 +6818,7 @@ class window
                 of xcb_char2b_t for xcb_image_text_16
 
             */
-            xcb_char2b_t *convert_to_char2b(const char *input, int *len)
+            xcb_char2b_t *convert_to_char2b(const char* input, int* len)
             {
                 size_t utf8_len = slen(input);
                 
@@ -6987,9 +6978,6 @@ class PolkitListener
 *****************<<       @class @c client        >>******************
 *********************************************************************/
 
-
-#define CLI_TITLE_BAR_EXPOSE_BIT 1
-#define CLI_TITLE_REQ_BIT 2
 class client
 {
     public:
@@ -10058,7 +10046,7 @@ class __status_bar__
             _w[SHUTDOWN_DROPDOWN].create_window
             (
                 screen->root,
-                ((WIFI_WINDOW_X - 50 - BUTTON_SIZE) - (20 / 2) - (100 / 2)),
+                ((WIFI_WINDOW_X - 50 - BUTTON_SIZE) - (100 / 2)),
                 20,
                 100,
                 60,

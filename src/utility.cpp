@@ -12,3 +12,10 @@ bool mwm::isTimeToRender(chrono::high_resolution_clock::time_point tp)
 
     return false;
 }
+
+size_t mwm::slen(const char *str)
+{
+    size_t len = 0;
+    for (; *str; ++str, ++len) {}
+    return len;
+}
