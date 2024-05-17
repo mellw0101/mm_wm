@@ -3259,15 +3259,15 @@ class __key_codes__
         xcb_key_symbols_t * keysyms;
 };
 
-static void buttonPressH(const xcb_generic_event_t *ev);
+static void buttonPressH(xcb_generic_event_t* ev);
 static void keyPressH(xcb_generic_event_t *ev);
 
-/**
-*****************************************
-*****************************************
-**** @class @c evH
-*****************************************
-****************************************/
+
+/*********************************************************************
+*****************<<         @class @c evH         >>******************
+*********************************************************************/
+
+
 class evH
 {
     private:
@@ -7980,13 +7980,7 @@ class client
 
             titlebar.grab_button({{L_MOUSE_BUTTON, NULL}});
             draw_title(TITLE_REQ_DRAW);
-
-            ConnSig(titlebar, XCB_EXPOSE,
-            {
-                titlebar.clear();
-                titlebar.draw_acc_16(win.get_net_wm_name().c_str());
-                xcb_flush(conn);
-            });
+            titlebar.draw_on_expose(win.get_net_wm_name());
 
             ConnSig(win, XCB_PROPERTY_NOTIFY,
             {
@@ -12471,10 +12465,10 @@ class mv_client
         STATIC_CONSTEXPR_TYPE(double, frameDuration, (1000 / frameRate));
     
     /* Methods     */
-        void snap(int x, int y)
+        void snap(uint32_t x, uint32_t y)
         {
             // WINDOW TO WINDOW SNAPPING 
-            for (client *const &cli : wm->cur_d->current_clients)
+            for (client* const &cli : wm->cur_d->current_clients)
             {
                 if (cli == c) continue;
                 
@@ -12571,22 +12565,37 @@ class mv_client
                 {
                     // SNAP WINDOW TO 'TOP_LEFT' CORNER OF NON_CONROLLED WINDOW WHEN APPROPRIET
                     if (x > cli->x - NC && x < cli->x + NC)
-                    {  
-                        c->frame.x_y(cli->x, (cli->y - c->height));
+                    {
+                        uint32_t data[2] =
+                        {
+                            static_cast<uint32_t>(cli->x),
+                            static_cast<uint32_t>(cli->y - c->height)
+                        };
 
+                        c->frame.conf_unchecked(XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, data);
                         return;
                     }
 
                     // SNAP WINDOW TO 'TOP_RIGHT' CORNER OF NON_CONROLLED WINDOW WHEN APPROPRIET
                     if (x + c->width > cli->x + cli->width - NC && x + c->width < cli->x + cli->width + NC)
                     {
-                        c->frame.x_y(((cli->x + cli->width) - c->width), (cli->y - c->height));
+                        uint32_t data[2] =
+                        {
+                            static_cast<uint32_t>((cli->x + cli->width) - c->width),
+                            static_cast<uint32_t>(cli->y - c->height)
+                        };
 
+                        c->frame.conf_unchecked(XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, data);
                         return;
                     }
 
-                    c->frame.x_y(x, (cli->y - c->height));
+                    uint32_t data[2] =
+                    {
+                        x,
+                        static_cast<uint32_t>(cli->y - c->height)
+                    };
 
+                    c->frame.conf_unchecked(XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, data);
                     return;
                 }
             }
@@ -12617,8 +12626,8 @@ class mv_client
                         if (isTimeToRender())
                         {
                             RE_CAST_EV(xcb_motion_notify_event_t);
-                            int new_x = e->root_x - start_x - BORDER_SIZE;
-                            int new_y = e->root_y - start_y - BORDER_SIZE;
+                            const uint32_t new_x = e->root_x - start_x - BORDER_SIZE;
+                            const uint32_t new_y = e->root_y - start_y - BORDER_SIZE;
                             snap(new_x, new_y);
                             xcb_flush(conn);
                         }
@@ -12628,8 +12637,12 @@ class mv_client
 
                     case XCB_BUTTON_RELEASE:
                     {
-                        shouldContinue = false;
-                        c->update();
+                        RE_CAST_EV(xcb_button_press_event_t);
+                        if (e->detail == L_MOUSE_BUTTON)
+                        {
+                            shouldContinue = false;
+                            c->update();
+                        }
 
                         break;
                     }
@@ -15160,7 +15173,7 @@ void keyPressH(xcb_generic_event_t* ev)
     }
 }
 
-void buttonPressH(const xcb_generic_event_t *ev)
+void buttonPressH(xcb_generic_event_t* ev)
 {
     RE_CAST_EV(xcb_button_press_event_t);
     client* c = wm->client_from_any_window(&e->event);
