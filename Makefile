@@ -113,28 +113,32 @@ clean:
 	rm -f $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d test
 
 backup:
-	@echo "Commands for backup"
+	chmod u+x tools/backup.sh
+	./tools/backup.sh
+
+help:
+	chmod u+x tools/help.sh
+	./tools/help.sh	
 
 depends:
-	chmod u+x tools/install_depends.sh
 	chmod u+x tools/check_and_install.sh
 	./tools/check_and_install.sh
 
 conf:
-	chmod u+x tools/configure.sh
+	chmod u+x tools/configure.sh 
 	./tools/configure.sh
 
 dist: clean
 
 install: all
-	mkdir -p /usr/local/bin
+	mkdir -p   /usr/local/bin
 	cp -f test /usr/local/bin/mwm
-	chmod 755 /usr/local/bin/mwm
+	chmod 755  /usr/local/bin/mwm
 
 install-armv8: ARMV8
-	mkdir -p /usr/local/bin
+	mkdir -p   /usr/local/bin
 	cp -f test /usr/local/bin/mwm
-	chmod 755 /usr/local/bin/mwm
+	chmod 755  /usr/local/bin/mwm
 
 ARMV8: CXXFLAGS = ${ARMV8_CXXFLAGS}
 ARMV8: LDFLAGS = ${ARMV8_LDFLAGS}
@@ -143,4 +147,4 @@ ARMV8: test
 uninstall:
 	rm -f /usr/local/bin/mwm
 
-.PHONY: all depends conf clean dist install uninstall install-armv8 ARMV8
+.PHONY: all depends conf clean dist install uninstall install-armv8 ARMV8 backup
