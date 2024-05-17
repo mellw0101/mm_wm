@@ -132,6 +132,10 @@ alacritty:
 	mkdir -p ~/.config/alacritty
 	cp -f tools/alacritty.toml ~/.config/alacritty/
 
+xorg_conf:
+	mkdir -p /etc/X11
+	cp -f tools/xorg.conf /etc/X11/
+
 dist: clean
 
 install: all
@@ -151,4 +155,4 @@ ARMV8: test
 uninstall:
 	rm -f /usr/local/bin/mwm
 
-.PHONY: all depends conf clean dist install uninstall install-armv8 ARMV8 backup alacritty
+.PHONY: all depends conf clean dist install uninstall install-armv8 ARMV8 backup alacritty xorg_conf
