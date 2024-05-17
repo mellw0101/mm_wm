@@ -1,21 +1,24 @@
-ARMV8_FASTFLAGS = -O2               \
-                  -march=armv8-a#da    \
-                  -mtune=-mtune=cortex-a53
+ARMV8_FASTFLAGS = \
+	-O2	\
+	-march=armv8-a
 
-ARMV8_CFLAGS =   -std=c++20                     \
-                 -pedantic                      \
-                 -Wall                          \
-                 -Wno-deprecated-declarations   \
-				 -DARMV8_BUILD					\
-                 ${ARMV8_FASTFLAGS}
+ARMV8_CFLAGS = \
+	-std=c++20	\
+	-pedantic	\
+	-Wall	\
+	-Wno-deprecated-declarations	\
+	-DARMV8_BUILD	\
+	${ARMV8_FASTFLAGS}
 
-ARMV8_CXXFLAGS = ${ARMV8_CFLAGS}
+ARMV8_CXXFLAGS = \
+	${ARMV8_CFLAGS}
 
-ARMV8_LDFLAGS =  ${LIBS}       	\
-                 -flto         	\
-                 -O2           	\
-                 -std=c++20		\
-				 -DARMV8_BUILD
+ARMV8_LDFLAGS =	\
+	${LIBS} \
+	-flto \
+	-O2 \
+	-std=c++20 \
+	-DARMV8_BUILD
 
 FASTFLAGS = \
 	-O3 					\
@@ -32,7 +35,8 @@ CFLAGS = \
 	-Wno-deprecated-declarations	\
 	${FASTFLAGS}
 
-CXXFLAGS = ${CFLAGS}
+CXXFLAGS = \
+	${CFLAGS}
 
 LIBS = \
 	-lxcb         	\
@@ -57,82 +61,44 @@ LIBS = \
 	-lpulse			\
 	-ldbus-1
 
+CC = \
+	clang
+
+CXX = \
+	clang++
+
+CXXFLAGS = \
+	-std=c++20	\
+	-pedantic	\
+	-Wall	\
+	-Wno-deprecated-declarations	\
+	${FASTFLAGS}
+
 LDFLAGS = \
-	${LIBS} 				\
-	-flto 					\
-	-O3 					\
-	-march=native 			\
-	-std=c++20				\
-	-funroll-loops			\
-	-Rpass=loop-vectorize 	\
-	-flto 					\
+	${LIBS} \
+	-flto \
+	-O3 \
+	-march=native \
+	-std=c++20 \
+	-funroll-loops \
+	-Rpass=loop-vectorize \
+	-flto \
 	-m64
 
-# -std=c++20
+SRC_DIR = \
+	src
 
-# cc  = clang
-# CXX = clang++
+OBJ_DIR = \
+	o.files
 
-# SRC = src/main.cpp src/tools.cpp src/xcb.cpp src/prof.cpp src/color.cpp
+SRC = \
+	$(wildcard $(SRC_DIR)/*.cpp)
 
-# OBJ  = $(SRC:../src/%.cpp=%.o)
-# DEPS = $(OBJ:.o=.d)
+OBJ = \
+	$(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
-# all: test
-
-# %.o: %.cpp
-# 	${CXX} -c ${CXXFLAGS} $< -o $@ -MMD -MP
-
-# test: $(OBJ)
-# 	${CXX} -o $@ $^ ${LDFLAGS}
-
-# clean:
-# 	sudo rm test
-# 	unset CXXFLAGS
-# 	unset LDFLAGS
-
-# backup:
-
-# depends:
-# 	sudo chmod u+x tools/install_depends.sh
-# 	sudo chmod u+x tools/check_and_install.sh
-# 	./tools/check_and_install.sh
-
-# conf:
-# 	sudo chmod u+x tools/configure.sh
-# 	./tools/configure.sh
-
-# dist: clean
-
-# install: all
-# 	mkdir -p      /bin
-# 	cp    -f test /bin/mwm
-# 	chmod 755     /bin/mwm
-
-# install-armv8: ARMV8
-# 	mkdir -p      /bin
-# 	cp    -f test /bin/mwm
-# 	chmod 755     /bin/mwm
-
-# ARMV8: CXXFLAGS = ${ARMV8_CXXFLAGS} -DARMV8_BUILD
-# ARMV8: LDFLAGS = ${ARMV8_LDFLAGS}
-# ARMV8: test
-
-# uninstall:
-
-# .PHONY: all depends conf clean dist install uninstall
-
-
-CC  = clang
-CXX = clang++
-CXXFLAGS = -std=c++20 -pedantic -Wall -Wno-deprecated-declarations ${FASTFLAGS}
-LDFLAGS = ${LIBS} -flto -O3 -march=native -std=c++20 -funroll-loops -Rpass=loop-vectorize -flto -m64
-
-SRC_DIR = src
-OBJ_DIR = o.files
-SRC = $(wildcard $(SRC_DIR)/*.cpp)
-OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
-DEPS = $(OBJ:.o=.d)
+DEPS = \
+	$(OBJ:.o=.d)
 
 all: test
 
