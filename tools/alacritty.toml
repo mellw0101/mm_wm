@@ -26,4 +26,4 @@ family = "hack"
 style = "Regular"
 
 [shell]
-program = "/bin/Shell"
+program = "/bin/bash"

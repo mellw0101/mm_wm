@@ -118,7 +118,7 @@ backup:
 
 help:
 	chmod u+x tools/help.sh
-	./tools/help.sh	
+	./tools/help.sh
 
 depends:
 	chmod u+x tools/check_and_install.sh
@@ -127,6 +127,10 @@ depends:
 conf:
 	chmod u+x tools/configure.sh 
 	./tools/configure.sh
+
+alacritty:
+	mkdir -p ~/.config/alacritty
+	cp -f tools/alacritty.toml ~/.config/alacritty/
 
 dist: clean
 
@@ -147,4 +151,4 @@ ARMV8: test
 uninstall:
 	rm -f /usr/local/bin/mwm
 
-.PHONY: all depends conf clean dist install uninstall install-armv8 ARMV8 backup
+.PHONY: all depends conf clean dist install uninstall install-armv8 ARMV8 backup alacritty
