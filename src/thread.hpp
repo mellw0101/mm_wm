@@ -443,11 +443,15 @@ class ThreadPool
     }
 */
 
-class ThreadWrapper {
+class ThreadWrapper
+{
     public:
-        ThreadWrapper() : running(false) {}
+        ThreadWrapper()
+        : running(false)
+        {}
 
-        ~ThreadWrapper() {
+        ~ThreadWrapper()
+        {
             stop();
         }
 
@@ -463,7 +467,8 @@ class ThreadWrapper {
 
             // Set the running flag and start the new thread
             running = true;
-            thread = std::thread([this, task = std::function<void()>(std::bind(std::forward<Callable>(task), std::forward<Args>(args)...))] {
+            thread = thread([this, task = function<void()>(bind(forward<Callable>(task), forward<Args>(args)...))]
+            {
                 task();
                 running = false;
             });
