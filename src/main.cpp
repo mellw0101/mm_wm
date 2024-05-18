@@ -4970,8 +4970,7 @@ class window
             }
 
         /* Unset         */
-            void
-            unset_EWMH_fullscreen_state()
+            void unset_EWMH_fullscreen_state()
             {
                 AutoTimer t(__func__);
 

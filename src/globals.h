@@ -3,6 +3,7 @@
 
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
+#include <vector>
 
 #define U32_MAX 0xFFFFFFFF
 
