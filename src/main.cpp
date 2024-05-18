@@ -91,9 +91,9 @@
 #include "tools.hpp"
 #include "prof.hpp"
 #include "color.hpp"
-#include "thread.hpp"
 
 /*
+#include "thread.hpp"
 #include "pty.h"
 #include <queue>
 #include <numeric>
@@ -8425,7 +8425,7 @@ class Key_Codes
 
                 for (auto &pair : key_map)
                 {
-                    xcb_keycode_t *keycode = xcb_key_symbols_get_keycode( keysyms, pair.first );
+                    xcb_keycode_t *keycode = xcb_key_symbols_get_keycode(keysyms, pair.first);
                     if (keycode)
                     { 
                         *(pair.second) = *keycode;
@@ -8665,8 +8665,6 @@ class Window_Manager
         vector<desktop*> desktop_list;
         client* focused_client = nullptr;
         desktop* cur_d = nullptr;
-
-        ThreadPool tp{4};
 
     /* Methods     */
         /* Main         */

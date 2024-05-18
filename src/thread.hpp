@@ -461,7 +461,8 @@ class ThreadWrapper
 
         // Start the thread with a new task
         template<typename Callable, typename... Args>
-        void start(Callable&& task, Args&&... args) {
+        void start(Callable&& task, Args&&... args)
+        {
             // Ensure any running thread is stopped before starting a new one
             stop();
 
@@ -475,26 +476,33 @@ class ThreadWrapper
         }
 
         // Stop the thread
-        void stop() {
-            if (running) {
-                running = false; // Set running flag to false, allowing the thread to exit if it checks this flag
-                if (thread.joinable()) {
-                    thread.join(); // Wait for the thread to finish execution
+        void stop()
+        {
+            if (running)
+            {
+                // Set running flag to false, allowing the thread to exit if it checks this flag
+                running = false;
+                if (thread.joinable())
+                {
+                    // Wait for the thread to finish execution
+                    thread.join();
                 }
             }
         }
 
         // Check if the thread is running
-        bool isRunning() const {
+        bool isRunning() const
+        {
             return running;
         }
 
     private:
-        std::thread thread;
-        std::atomic<bool> running;
+        thread thread;
+        atomic<bool> running;
 };
 
-class TimedDataSender {
+class TimedDataSender
+{
     void loop()
     {
         using namespace std::chrono;
@@ -505,25 +513,37 @@ class TimedDataSender {
             auto now = steady_clock::now();
             if (now >= next_run_time)
             {
-                task_();/* It's time to perform the task */
-                next_run_time = now + milliseconds(interval_);/* Schedule the next run */
+                // It's time to perform the task
+                task_();
+                
+                // Schedule the next run
+                next_run_time = now + milliseconds(interval_);
             }
             else
             {
-                this_thread::sleep_for(milliseconds(1));/* Sleep for a short while to prevent busy waiting */
+                // Sleep for a short while to prevent busy waiting
+                this_thread::sleep_for(milliseconds(1));
             }
         }
     }
 
     thread worker_;
     atomic<bool> active_;
-    unsigned int interval_; // The interval between task executions, in milliseconds
-    function<void()> task_; // The task to be performed
+    
+    // The interval between task executions, in milliseconds
+    unsigned int interval_;
+    
+    // The task to be performed
+    function<void()> task_;
 
-    atomic<bool> paused_; // Added to indicate whether the loop is paused
-    mutex mtx_; // Mutex for condition variable
-    condition_variable cv_; // Condition variable for pausing and resuming
-
+    // Added to indicate whether the loop is paused
+    atomic<bool> paused_;
+ 
+    // Mutex for condition variable
+    mutex mtx_;
+    
+    // Condition variable for pausing and resuming
+    condition_variable cv_;
 
 public:
     // Constructor: Takes the interval in milliseconds and the task to perform
@@ -571,7 +591,8 @@ public:
 };
 
 
-class TimedDataSenderSeperateThread {
+class TimedDataSenderSeperateThread
+{
     void loop()
     {
         using namespace std::chrono;
@@ -635,7 +656,8 @@ public:
 };
 using tdssp = TimedDataSenderSeperateThread;
 
-class TimedDataSender_pause {
+class TimedDataSender_pause
+{
 private:
     thread worker_;
     atomic<bool> active_;
