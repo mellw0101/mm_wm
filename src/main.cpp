@@ -91,10 +91,10 @@
 #include "tools.hpp"
 #include "prof.hpp"
 #include "color.hpp"
+#include "thread.hpp"
 
 /*
 #include "pty.h"
-#include "thread.hpp"
 #include <queue>
 #include <numeric>
 #include <optional>
@@ -8663,10 +8663,14 @@ class Window_Manager
         client* focused_client = nullptr;
         desktop* cur_d = nullptr;
 
+        ThreadPool tp{4};
+
     /* Methods     */
         /* Main         */
             void init()
             {
+                AutoTimer t{"Window_Manager::init()"};
+
                 intern_init();
 
                 xcb = connect_to_server(screen);
@@ -8720,7 +8724,7 @@ class Window_Manager
                 setSubstructureRedirectMask_();
                 configure_root_();
                 ewmh_();
-                
+
                 key_codes.init();
                 event_handler = new __event_handler__();
                 

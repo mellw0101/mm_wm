@@ -250,17 +250,21 @@ class ThreadPool {
         bool stop;
 }; */
 
-#include <cstdint> // For uint32_t
+// For uint32_t
+#include <cstdint>
 #include <unordered_map>
+
 // #include <optional>
 
 template<typename ValueType>
-class UInt32UnorderedMap {
-    std::unordered_map<uint32_t, ValueType> map_;
+class UInt32UnorderedMap
+{
+    unordered_map<uint32_t, ValueType> map_;
     
 public:
     // Add or update a value associated with a uint32_t key
-    void insert(uint32_t key, const ValueType& value) {
+    void insert(uint32_t key, const ValueType& value)
+    {
         map_[key] = value;
     }
 
@@ -313,72 +317,82 @@ public:
     std::future<void> __Name = __Pool.enqueue(__VA_ARGS__)
 
 template<typename ThreadPoolType, typename Func, typename... Args>
-auto enqueueTask(ThreadPoolType& pool, Func&& func, Args&&... args) -> std::future<decltype(func(args...))>
+auto enqueueTask(ThreadPoolType& pool, Func&& func, Args&&... args) -> future<decltype(func(args...))>
 {
-    return pool.enqueue(std::forward<Func>(func), std::forward<Args>(args)...);
+    return pool.enqueue(forward<Func>(func), forward<Args>(args)...);
 }
 
 class ThreadPool
 {
     public:
-        ThreadPool(size_t threads) : stop(false)
+        ThreadPool(size_t threads)
+        : stop(false)
         {
-            for(size_t i = 0; i < threads; ++i)
+            for (size_t i = 0; i < threads; ++i)
             {
                 workers.emplace_back([this]
                 {
-                    while(true)
+                    while (true)
                     {
-                        std::function<void()> task;
+                        function<void()> task;
                         {
-                            std::unique_lock<std::mutex> lock(this->queueMutex);
-                            this->condition.wait(lock, [this] { return this->stop || !this->tasks.empty(); });
+                            unique_lock<mutex> lock(this->queueMutex);
+                            this->condition.wait(lock, [this]
+                            {
+                                return this->stop || !this->tasks.empty();
+                            });
+                            
                             if (this->stop && this->tasks.empty())
                             {
                                 return;
                             }
+                            
                             task = std::move(this->tasks.front());
                             this->tasks.pop();
-
-                        } task();
+                        }
+                        task();
                     }
                 });
             }
         }
 
         template<class Callback, class... Args>
-        auto enqueue(Callback&& f, Args&&... args)
-        -> std::future<typename std::invoke_result<Callback, Args...>::type>
+        auto enqueue(Callback&& f, Args&&... args) -> future<typename invoke_result<Callback, Args...>::type>
         {
             using return_type = typename std::invoke_result<Callback, Args...>::type;
 
-            auto task = std::make_shared<std::packaged_task<return_type()>>
+            auto task = make_shared<packaged_task<return_type()>>
             (
-                std::bind(std::forward<Callback>(f), std::forward<Args>(args)...)
+                bind(forward<Callback>(f), forward<Args>(args)...)
             );
 
-            std::future<return_type> res = task->get_future();
+            future<return_type> res = task->get_future();
             {
-                std::unique_lock<std::mutex> lock(queueMutex);
+                unique_lock<std::mutex> lock(queueMutex);
                 if (stop)
                 {
                     throw std::runtime_error("enqueue on stopped ThreadPool");
                 }
-                tasks.emplace([task](){ (*task)(); });
-            
-            } condition.notify_one();
+
+                tasks.emplace([task]()
+                {
+                    (*task)();
+                });
+            }
+            condition.notify_one();
+
             return res;
         }
         
         ~ThreadPool()
         {
             {
-                std::unique_lock<std::mutex> lock(queueMutex);
+                unique_lock<mutex> lock(queueMutex);
                 stop = true;
-            
-            } condition.notify_all();
+            }
+            condition.notify_all();
 
-            for(std::thread &worker: workers)
+            for (thread &worker: workers)
             {
                 worker.join();
             }
