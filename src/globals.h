@@ -8,6 +8,8 @@
 
 #define FRAMERATE 120
 
+#define CLEAR_UNCLOSED_CLIENTS 233
+
 #define FRAMETIME (double)1000 / FRAMERATE
 
 extern xcb_connection_t *conn;

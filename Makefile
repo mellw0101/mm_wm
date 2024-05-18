@@ -139,14 +139,14 @@ xorg_conf:
 dist: clean
 
 install: all
-	mkdir -p   /usr/local/bin
-	cp -f test /usr/local/bin/mwm
-	chmod 755  /usr/local/bin/mwm
+	mkdir -p   /bin
+	cp -f test /bin/mwm
+	chmod 755  /bin/mwm
 
 install-armv8: ARMV8
-	mkdir -p   /usr/local/bin
-	cp -f test /usr/local/bin/mwm
-	chmod 755  /usr/local/bin/mwm
+	mkdir -p   /bin
+	cp -f test /bin/mwm
+	chmod 755  /bin/mwm
 
 ARMV8: CXXFLAGS = ${ARMV8_CXXFLAGS}
 ARMV8: LDFLAGS = ${ARMV8_LDFLAGS}

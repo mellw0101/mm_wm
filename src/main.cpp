@@ -4660,9 +4660,9 @@ class window
                 return 0;
             }
             
-            void send_event(uint32_t __event_mask, const void *__value_list = nullptr)
+            void send_event(uint32_t event_mask, const void* value_list = nullptr)
             {
-                if (__event_mask & XCB_EVENT_MASK_EXPOSURE)
+                if (event_mask & XCB_EVENT_MASK_EXPOSURE)
                 {
                     AutoTimer t("window:send_event:XCB_EVENT_MASK_EXPOSURE");
 
@@ -4686,21 +4686,21 @@ class window
                     xcb_flush(conn);
                 }
 
-                if (__event_mask & XCB_EVENT_MASK_STRUCTURE_NOTIFY)
+                if (event_mask & XCB_EVENT_MASK_STRUCTURE_NOTIFY)
                 {
                     AutoTimer t("window:send_event:XCB_EVENT_MASK_STRUCTURE_NOTIFY");
 
-                    const uint32_t *value_list =  reinterpret_cast<const uint32_t *>(__value_list);
+                    const uint32_t *intern_value_list =  reinterpret_cast<const uint32_t *>(value_list);
 
                     xcb_configure_notify_event_t event;
                     event.response_type     = XCB_CONFIGURE_NOTIFY;
                     event.event             = _window;
                     event.window            = _window;
                     event.above_sibling     = XCB_NONE;
-                    event.x                 = value_list[0];
-                    event.y                 = value_list[1];
-                    event.width             = value_list[2];
-                    event.height            = value_list[3];
+                    event.x                 = intern_value_list[0];
+                    event.y                 = intern_value_list[1];
+                    event.width             = intern_value_list[2];
+                    event.height            = intern_value_list[3];
                     event.border_width      = 0;
                     event.override_redirect = false;
                     event.pad0              = 0;
@@ -4716,19 +4716,19 @@ class window
                     xcb_flush(conn);
                 }
                 
-                if (__event_mask & KILL_WINDOW)
+                if (event_mask & KILL_WINDOW)
                 {
                     AutoTimer t("window:send_event:KILL_WINDOW");
 
-                    const uint32_t *value_list = reinterpret_cast<const uint32_t *>(__value_list);
+                    const uint32_t *intern_value_list = reinterpret_cast<const uint32_t *>(value_list);
 
                     xcb_client_message_event_t ev;
                     ev.response_type  = XCB_CLIENT_MESSAGE;
-                    ev.format         = value_list[0];
+                    ev.format         = intern_value_list[0];
                     ev.sequence       = 0;
                     ev.window         = _window;
-                    ev.type           = value_list[1];
-                    ev.data.data32[0] = value_list[2];
+                    ev.type           = intern_value_list[1];
+                    ev.data.data32[0] = intern_value_list[2];
                     ev.data.data32[1] = XCB_CURRENT_TIME;
 
                     xcb_send_event
@@ -4743,14 +4743,14 @@ class window
                 }
             }
             
-            void update(uint32_t __x, uint32_t __y, uint32_t __width, uint32_t __height)
+            void update(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
             {
                 AutoTimer t("window::update");
 
-                _x      = __x;
-                _y      = __y;
-                _width  = __width;
-                _height = __height;
+                _x      = x;
+                _y      = y;
+                _width  = width;
+                _height = height;
             }
 
         /* Check         */
@@ -8638,6 +8638,18 @@ class context_menu
 *********************************************************************/
 
 
+namespace wm_helpers
+{
+    namespace cli
+    {
+        void check(client* c)
+        {
+            loutI << c->win.get_icccm_class() << loutEND;
+        }
+    }
+}
+
+
 class Window_Manager
 {
     /* Defines     */
@@ -9149,6 +9161,8 @@ class Window_Manager
                     return;
                 }
 
+                wm_helpers::cli::check(c);
+
                 int16_t x = 0, y = 0; uint16_t width = 0, height = 0;
                 c->win.geo(&x, &y, &width, &height);
                 
@@ -9491,6 +9505,43 @@ class Window_Manager
         /* Events */
             void setup_events_()
             {
+                ConnSig(screen->root, CLEAR_UNCLOSED_CLIENTS,
+                {
+                    /*
+
+                        Check if there are any clients that failed
+                        to properly unmap the frame and the rest of
+                        the decoratons but successfully unmaped the
+                        'main' window
+
+                    */
+                    for (client* const &c : this->client_list)
+                    {
+                        if (!c) continue;
+
+                        if (c->frame.is_mapped()
+                        && !c->win.is_mapped())
+                        {
+                            c->kill();
+                        }
+                    }
+
+
+                    for (int i=0; i < this->desktop_list.size(); ++i)
+                    {
+                        for (client* const &c : this->desktop_list[i]->current_clients)
+                        {
+                            if (!c) continue;
+
+                            if (c->frame.is_mapped()
+                            && !c->win.is_mapped())
+                            {
+                                c->kill();
+                            }
+                        }
+                    }
+                });
+
                 ConnSig(screen->root, XCB_MAP_REQUEST,
                 {
                     /*
