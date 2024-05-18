@@ -407,13 +407,14 @@ class ThreadPool
 
 };
 /** USAGE: ->
-    int main() {
+    int main()
+    {
         // Create a ThreadPool with 4 worker threads
         ThreadPool pool(4);
 
         // Enqueue some tasks into the pool
-        std::future<void> result1 = pool.enqueue(workFunction, 1);
-        std::future<void> result2 = pool.enqueue(workFunction, 2);
+        future<void> result1 = pool.enqueue(workFunction, 1);
+        future<void> result2 = pool.enqueue(workFunction, 2);
 
         // Optionally, wait for a specific task to complete
         result1.wait();
@@ -426,15 +427,19 @@ class ThreadPool
         return 0;
     }
 
-    void foo() {
-        ThreadPool pool(4); // Assuming ThreadPool is defined and instantiated
+    void foo()
+    {
+        // Assuming ThreadPool is defined and instantiated
+        ThreadPool pool(4);
 
-        auto futureResult = enqueueTask(pool, [](int x) -> int {
+        auto futureResult = enqueueTask(pool, [](int x) -> int
+        {
             return x * 2;
-        }, 10);
+        }
+        , 10);
 
         int result = futureResult.get();
-        std::cout << "The result is: " << result << std::endl;
+        cout << "The result is: " << result << '\n';
     }
 */
 

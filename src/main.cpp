@@ -8360,17 +8360,19 @@ class Key_Codes
     public:
     // constructor and destructor.
         Key_Codes() 
-        : keysyms(nullptr) {}
+        : keysyms(nullptr)
+        {}
 
-        ~Key_Codes() {
+        ~Key_Codes()
+        {
             free(keysyms);
         }
 
     // methods.
         void init()
         {
-            keysyms = xcb_key_symbols_alloc( conn );
-            if ( keysyms )
+            keysyms = xcb_key_symbols_alloc(conn);
+            if (keysyms)
             {
                 map<uint32_t, xcb_keycode_t *> key_map = {
                     { A,            &a         },
@@ -8420,13 +8422,14 @@ class Key_Codes
                     { MINUS,        &minus     },
                     { UNDERSCORE,   &underscore}
                 };
-                for ( auto &pair : key_map )
+
+                for (auto &pair : key_map)
                 {
                     xcb_keycode_t *keycode = xcb_key_symbols_get_keycode( keysyms, pair.first );
-                    if ( keycode )
+                    if (keycode)
                     { 
-                        *( pair.second ) = *keycode;
-                        free( keycode );
+                        *(pair.second) = *keycode;
+                        free(keycode);
                     }
                 }
             }
