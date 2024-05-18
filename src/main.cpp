@@ -9577,7 +9577,8 @@ class __network__
 {
     public:
     /* Methods     */
-        enum {
+        enum
+        {
             LOCAL_IP = 0,
             INTERFACE_FOR_LOCAL_IP = 1
         };

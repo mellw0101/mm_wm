@@ -23,12 +23,14 @@ using namespace std;
 #include <exception>
 // #include <optional>
 
-class Thread {
+using namespace std;
+
+class Thread
+{
     public:
         template<typename Callable, typename... Args>
         Thread(Callable&& func, Args&&... args)
-        : active(true), paused(false),
-        worker([this, func = std::forward<Callable>(func), ...args = std::forward<Args>(args)]()
+        : active(true), paused(false), worker([this, func = std::forward<Callable>(func), ...args = std::forward<Args>(args)]()
         {
             try
             {
@@ -36,21 +38,27 @@ class Thread {
                 {
                     if (!paused)
                     {
-                        func(std::forward<Args>(args)...);    
+                        func(forward<Args>(args)...);    
                     }
-                    std::this_thread::yield(); // Yield to avoid busy waiting
+
+                    // Yield to avoid busy waiting
+                    this_thread::yield();
                 }
             }
             catch (...)
             {
-                lastException = std::current_exception(); // Capture any exception
+                // Capture any exception
+                lastException = std::current_exception();
+
                 // Optionally, notify about the exception here
             }
-        }){}
+        })
+        {}
 
-        ~Thread() {
-            stop(); // Ensure the thread is signaled to stop
-
+        ~Thread()
+        {
+            // Ensure the thread is signaled to stop
+            stop();
         }
 
         // Modified operations for thread safety and error handling
@@ -59,8 +67,16 @@ class Thread {
         Thread(Thread&&) = delete;
         Thread& operator=(Thread&&) = delete;
 
-        void pause() { paused = true; }
-        void resume() { paused = false; }
+        void pause()
+        {
+            paused = true;
+        }
+        
+        void resume()
+        {
+            paused = false;
+        }
+        
         void stop()
         {
             if (active)
@@ -73,17 +89,32 @@ class Thread {
             }
         }
 
-        bool isPaused() const { return paused; }
-        bool isActive() const { return active; }
-        thread::id getID() const { return worker.get_id(); }
+        bool isPaused() const
+        {
+            return paused;
+        }
+
+        bool isActive() const
+        {
+            return active;
+        }
+
+        thread::id getID() const
+        {
+            return worker.get_id();
+        }
 
         // New Functionality: Error handling
-        bool hasExceptionOccurred() const { return static_cast<bool>(lastException); }
+        bool hasExceptionOccurred() const
+        {
+            return static_cast<bool>(lastException);
+        }
+        
         void rethrowException() const
         {
             if (lastException)
             {
-                std::rethrow_exception(lastException);
+                rethrow_exception(lastException);
             }
         }
 
@@ -96,13 +127,20 @@ class Thread {
 };
 
 template<typename... ParamTypes>
-class iter_thread_t {
+class iter_thread_t
+{
     private:
-        std::thread worker_;
-        std::atomic<bool> active_;
-        unsigned interval_; // The interval between task executions, in milliseconds
-        std::function<void()> task_; // The task to be performed, adjusted as needed
-        std::tuple<ParamTypes...> params_; // Parameters to be used with the task
+        thread worker_;
+        atomic<bool> active_;
+        
+        // The interval between task executions, in milliseconds
+        unsigned interval_;
+        
+        // The task to be performed, adjusted as needed
+        function<void()> task_;
+        
+        // Parameters to be used with the task
+        tuple<ParamTypes...> params_;
 
         void loop()
         {
@@ -114,12 +152,12 @@ class iter_thread_t {
                 auto now = steady_clock::now();
                 if (now >= next_run_time)
                 {
-                    std::apply(task_, params_); // Use std::apply to pass tuple elements as arguments
+                    apply(task_, params_); // Use std::apply to pass tuple elements as arguments
                     next_run_time = now + milliseconds(interval_); // Schedule the next run
                 }
                 else
                 {
-                    std::this_thread::sleep_for(milliseconds(1)); // Sleep for a short while to prevent busy waiting
+                    this_thread::sleep_for(milliseconds(1)); // Sleep for a short while to prevent busy waiting
                 }
             }
         }
@@ -127,7 +165,8 @@ class iter_thread_t {
     public:
         // Constructor: Takes the interval in milliseconds, the task to perform, and parameters for the task
         iter_thread_t(unsigned interval, std::function<void(ParamTypes...)> task, ParamTypes... params)
-        : interval_(interval), task_(std::move(task)), active_(true), params_(std::make_tuple(std::forward<ParamTypes>(params)...)) {
+        : interval_(interval), task_(move(task)), active_(true), params_(make_tuple(forward<ParamTypes>(params)...))
+        {
             worker_ = std::thread([this]() { this->loop(); });
         }
 
