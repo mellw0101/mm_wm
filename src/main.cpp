@@ -8061,7 +8061,6 @@ class client
                 }
 
                 win.kill_test();
-                Emit(screen->root, CLEAR_UNCLOSED_CLIENTS);
             });
 
             close_button.highlight_border_on_hover();
@@ -15364,6 +15363,11 @@ void handle_configure_notify(xcb_generic_event_t* ev)
 
 void handle_unmap_notify(xcb_generic_event_t* ev)
 {
+    RE_CAST_EV(xcb_unmap_notify_event_t);
+
+    client* c = wm->client_from_window(&e->window);
+    if (!c) return;
+
     Emit(screen->root, CLEAR_UNCLOSED_CLIENTS);
 }
 
