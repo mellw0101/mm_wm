@@ -3263,8 +3263,8 @@ class __key_codes__
 static void buttonPressH(xcb_generic_event_t* ev);
 static void keyPressH(xcb_generic_event_t *ev);
 static void handle_configure_request(xcb_generic_event_t* event);
-static void handle_configure_notify(xcb_generic_event_t* event);
-static void handle_unmap_notify(xcb_generic_event_t* event);
+static void handle_configure_notify(xcb_generic_event_t* ev);
+static void handle_unmap_notify(xcb_generic_event_t* ev);
 
 
 /*********************************************************************
@@ -3493,7 +3493,7 @@ class evH
             running = false;
         }
 };
-static evH *ev_hand(nullptr);
+static evH* ev_hand = nullptr;
 
 using Ev = const xcb_generic_event_t *;
 class __event_handler__
@@ -4100,7 +4100,7 @@ class __event_handler__
         /* ThreadPool thread_pool{20}; */
 
 };
-static __event_handler__ *event_handler(nullptr);
+static __event_handler__* event_handler = nullptr;
 using EventCallback = function<void(Ev)>;
 
 class Bitmap
@@ -15348,24 +15348,18 @@ void handle_configure_request(xcb_generic_event_t* event)
     xcb_flush(conn);
 }
 
-void handle_configure_notify(xcb_generic_event_t* event) 
+void handle_configure_notify(xcb_generic_event_t* ev)
 {
-    AutoTimer t{"handle_configure_notify"};
+    /* AutoTimer t{"handle_configure_notify"};
 
-    auto configure_notify = reinterpret_cast<xcb_configure_notify_event_t*>(event);
+    RE_CAST_EV(xcb_configure_notify_event_t);
     
     // Ensure we have the latest configuration details
-    loutI <<
-        "ConfigureNotify: Window " <<
-        configure_notify->window <<
-        " moved to (" << configure_notify->x <<
-        ", " <<
-        configure_notify->y <<
-        ") with size " <<
-        configure_notify->width <<
-        "x" <<
-        configure_notify->height <<
-    loutEND;
+    loutI << "ConfigureNotify: Window " << e->window << " moved to (" << e->x << ", " << e->y << ") with size " << e->width << "x" << e->height << loutEND;
+
+    client* c = wm->client_from_window(&e->window);
+    if (!c) return;
+    loutI << "SUCCESSSESSS" << loutEND; */
 }
 
 void handle_unmap_notify(xcb_generic_event_t* ev)
