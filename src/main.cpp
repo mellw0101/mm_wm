@@ -7053,7 +7053,7 @@ class PolkitListener
         : DBus::ObjectProxy(connection, path, service)
         {}
 
-        void RequestAuthentication(const string& action_id)
+        void RequestAuthentication(const string &action_id)
         {
             loutI << "SUCCESS " << action_id << loutEND;
         }
