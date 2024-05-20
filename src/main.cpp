@@ -3259,8 +3259,11 @@ class __key_codes__
         xcb_key_symbols_t * keysyms;
 };
 
+
 static void buttonPressH(xcb_generic_event_t* ev);
 static void keyPressH(xcb_generic_event_t *ev);
+static void handle_configure_request(xcb_generic_event_t* event);
+static void handle_configure_notify(xcb_generic_event_t* event);
 
 
 /*********************************************************************
@@ -3335,8 +3338,8 @@ class evH
                                 signal_manager->_window_signals.emit(e->event, R_MOUSE_BUTTON_EVENT);
                             }
                         }
-                        buttonPressH(ev);
 
+                        buttonPressH(ev);
                         break;
                     }
 
@@ -3353,6 +3356,7 @@ class evH
                         keyPressH(ev);
                         break;
                     }
+                    
                     case XCB_ENTER_NOTIFY:
                     {
                         AutoTimer t("XCB_ENTER_NOTIFY");
@@ -3361,6 +3365,7 @@ class evH
                         signal_manager->_window_signals.emit(e->event, XCB_ENTER_NOTIFY);
                         break;
                     }
+                    
                     case XCB_LEAVE_NOTIFY:
                     {
                         AutoTimer t("XCB_LEAVE_NOTIFY");
@@ -3369,6 +3374,7 @@ class evH
                         signal_manager->_window_signals.emit(e->event, XCB_LEAVE_NOTIFY);
                         break;
                     }
+                    
                     case XCB_FOCUS_IN:
                     {
                         AutoTimer t("XCB_FOCUS_IN");
@@ -3378,6 +3384,7 @@ class evH
                         signal_manager->_window_signals.emit(screen->root, SET_FOCUSED_CLIENT, e->event);
                         break;
                     }
+                    
                     case XCB_FOCUS_OUT:
                     {
                         AutoTimer t("XCB_FOCUS_OUT");
@@ -3386,6 +3393,7 @@ class evH
                         signal_manager->_window_signals.emit(e->event, XCB_FOCUS_OUT);
                         break;
                     }
+                    
                     case XCB_MAP_REQUEST:
                     {
                         AutoTimer t("XCB_MAP_REQUEST");
@@ -3393,6 +3401,7 @@ class evH
                         signal_manager->_window_signals.emit(screen->root, XCB_MAP_REQUEST, e->window);
                         break;
                     }
+                    
                     case XCB_MAP_NOTIFY:
                     {
                         AutoTimer t("XCB_MAP_NOTIFY");
@@ -3401,6 +3410,7 @@ class evH
                         signal_manager->_window_signals.emit(screen->root, XCB_MAP_NOTIFY, e->event);
                         break;
                     }
+                    
                     /* case XCB_CLIENT_MESSAGE:
                     {
                         AutoTimer t("XCB_CLIENT_MESSAGE");
@@ -3421,6 +3431,7 @@ class evH
                         }
                         break;
                     } */
+                    
                     case XCB_DESTROY_NOTIFY:
                     {
                         AutoTimer t("XCB_DESTROY_NOTIFY");
@@ -3433,6 +3444,7 @@ class evH
                         }
                         break;
                     }
+                    
                     case XCB_PROPERTY_NOTIFY:
                     {
                         AutoTimer t("XCB_PROPERTY_NOTIFY");
@@ -3445,7 +3457,20 @@ class evH
                         }
                         break;
                     }
+
+                    case XCB_CONFIGURE_REQUEST:
+                    {
+                        handle_configure_request(ev);
+                        break;
+                    }
+
+                    case XCB_CONFIGURE_NOTIFY:
+                    {
+                        handle_configure_notify(ev);
+                        break;
+                    }
                 }
+
                 free(ev);
             }
         }
@@ -15276,6 +15301,56 @@ void buttonPressH(xcb_generic_event_t* ev)
             resize_client::border border(c, edge::BOTTOM_RIGHT);
         }
     }
+}
+
+void handle_configure_request(xcb_generic_event_t* event)
+{
+    AutoTimer t{"handle_configure_request"};
+
+    auto configure_request = reinterpret_cast<xcb_configure_request_event_t*>(event);
+    
+    xcb_configure_notify_event_t configure_notify = {};
+    configure_notify.response_type = XCB_CONFIGURE_NOTIFY;
+    configure_notify.event = configure_request->window;
+    configure_notify.window = configure_request->window;
+    configure_notify.x = configure_request->x;
+    configure_notify.y = configure_request->y;
+    configure_notify.width = configure_request->width;
+    configure_notify.height = configure_request->height;
+    configure_notify.border_width = configure_request->border_width;
+    configure_notify.above_sibling = configure_request->sibling;
+    configure_notify.override_redirect = configure_request->value_mask & XCB_CW_OVERRIDE_REDIRECT;
+
+    xcb_send_event
+    (
+        conn,
+        false,
+        configure_request->window,
+        XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+        reinterpret_cast<const char*>(&configure_notify)
+    );
+
+    xcb_flush(conn);
+}
+
+void handle_configure_notify(xcb_generic_event_t* event) 
+{
+    AutoTimer t{"handle_configure_notify"};
+
+    auto configure_notify = reinterpret_cast<xcb_configure_notify_event_t*>(event);
+    
+    // Ensure we have the latest configuration details
+    loutI <<
+        "ConfigureNotify: Window " <<
+        configure_notify->window <<
+        " moved to (" << configure_notify->x <<
+        ", " <<
+        configure_notify->y <<
+        ") with size " <<
+        configure_notify->width <<
+        "x" <<
+        configure_notify->height <<
+    loutEND;
 }
 
 class test
