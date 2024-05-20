@@ -9531,6 +9531,8 @@ class Window_Manager
             {
                 ConnSig(screen->root, CLEAR_UNCLOSED_CLIENTS,
                 {
+                    loutI << "CLEAR_UNCLOSED_CLIENTS Running" << loutEND;
+
                     /*
 
                         Check if there are any clients that failed
