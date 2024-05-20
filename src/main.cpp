@@ -3264,6 +3264,7 @@ static void buttonPressH(xcb_generic_event_t* ev);
 static void keyPressH(xcb_generic_event_t *ev);
 static void handle_configure_request(xcb_generic_event_t* event);
 static void handle_configure_notify(xcb_generic_event_t* event);
+static void handle_unmap_notify(xcb_generic_event_t* event);
 
 
 /*********************************************************************
@@ -3292,12 +3293,14 @@ class evH
                 AutoTimer t("main_loop");
 
                 ev = xcb_wait_for_event(conn);
-                if ( !ev )
+                if (!ev)
                 {
                     loutE << "ev = nullptr";
                     continue;
                 }
+
                 uint8_t res = (ev->response_type & ~0x80);
+
                 AutoTimer t2("inner loop");
 
                 switch (res)
@@ -3435,13 +3438,16 @@ class evH
                     case XCB_DESTROY_NOTIFY:
                     {
                         AutoTimer t("XCB_DESTROY_NOTIFY");
-
+                        
                         RE_CAST_EV(xcb_destroy_notify_event_t); 
                         if (e->window == e->event)
                         {
                             signal_manager->_window_signals.emit(screen->root, XCB_DESTROY_NOTIFY, e->event);
                             xcb_flush(conn);
                         }
+
+                        signal_manager->_window_signals.emit(screen->root, CLEAR_UNCLOSED_CLIENTS);
+
                         break;
                     }
                     
@@ -3455,6 +3461,7 @@ class evH
                             signal_manager->_window_signals.emit(e->window, XCB_PROPERTY_NOTIFY);
                             xcb_flush(conn);
                         }
+
                         break;
                     }
 
@@ -3467,6 +3474,12 @@ class evH
                     case XCB_CONFIGURE_NOTIFY:
                     {
                         handle_configure_notify(ev);
+                        break;
+                    }
+
+                    case XCB_UNMAP_NOTIFY:
+                    {
+                        handle_unmap_notify(ev);
                         break;
                     }
                 }
@@ -7952,6 +7965,7 @@ class client
                 (height + TITLE_BAR_HEIGHT + (BORDER_SIZE * 2)),
                 DARK_GREY
             );
+
             xcb_flush(conn);
             win.reparent(frame, BORDER_SIZE, (TITLE_BAR_HEIGHT + BORDER_SIZE));
             update();
@@ -8047,6 +8061,7 @@ class client
                 }
 
                 win.kill_test();
+                Emit(screen->root, CLEAR_UNCLOSED_CLIENTS);
             });
 
             close_button.highlight_border_on_hover();
@@ -9281,8 +9296,6 @@ class Window_Manager
                         ),
                         desktop_list[i]->current_clients.end()
                     );
-
-                    loutI << "desktop" << (i + 1) << " client vec size" << desktop_list[i]->current_clients.size() << '\n';
                 }
 
                 signal_manager->_window_client_map.remove_by_value(c);
@@ -14009,7 +14022,7 @@ class max_win
 {
     private:
     /* Variabels   */
-        client(*c);
+        client* c = nullptr;
 
     /* Methods     */
         void max_win_animate(int endX, int endY, int endWidth, int endHeight)
@@ -14125,7 +14138,7 @@ class max_win
         } max_win_type;
 
     /* Constructor */
-        max_win(client *c, max_win_type type)
+        max_win(client* c, max_win_type type)
         : c(c)
         {
             if (!c) return;
@@ -15353,6 +15366,11 @@ void handle_configure_notify(xcb_generic_event_t* event)
         "x" <<
         configure_notify->height <<
     loutEND;
+}
+
+void handle_unmap_notify(xcb_generic_event_t* ev)
+{
+    Emit(screen->root, CLEAR_UNCLOSED_CLIENTS);
 }
 
 class test
