@@ -67,4 +67,4 @@ mm_wm is a minimalist window manager built exclusively with XCB. This design cho
 
 ### Or
 
-### Manually add mw_wm to your dm of choice
+### Manually add mw_wm to your display manager of choice
