@@ -1,5 +1,16 @@
 # mm_wm - Minimalist Window Manager
 
+## Table of Contents
+
+- [Description](#description)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
+
 ## Description
 
 mm_wm is a minimalist window manager built exclusively with XCB. This design choice ensures superior response times from the X server by reducing the number of requests sent, making mm_wm significantly faster compared to those using Xlib. By leveraging XCB's efficient and asynchronous communication capabilities, mm_wm offers a highly responsive and lightweight window management experience.
