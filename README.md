@@ -62,4 +62,9 @@ mm_wm is a minimalist window manager built exclusively with XCB. This design cho
 
 ## Usage
 
-Run ```startx``` from a tty
+### Run with 'startx' from tty (Simplest Method)
+    ```sh
+    startx
+    ```
+
+### Adding mm_wm to a display manager of your choice (Harder Method(it mostly just takes time to set up and is usually quite easy to do))
