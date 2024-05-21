@@ -38,12 +38,12 @@ mm_wm is a minimalist window manager built exclusively with XCB. This design cho
     ```
 
 ## Set up startx for launching mm_wm
-### 1. Make a backup of old ~/.xinitrc, to do this run command:
+  ### 1. Make a backup of old ~/.xinitrc, to do this run command
     cp ~/.xinitrc ~/.xinitrc.backup
 
-### 2. Append 'exec mwm' into ~/.xinitrc:
+  ### 2. Append 'exec mwm' into ~/.xinitrc:
     echo "exec mwm" > ~/.xinitrc
 
 ## Usage
-### Run 'startx' from a tty to launch mm_wm
+  ### Run 'startx' from a tty to launch mm_wm
     startx
