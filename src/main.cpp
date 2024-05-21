@@ -15365,6 +15365,8 @@ void handle_unmap_notify(xcb_generic_event_t* ev)
 {
     RE_CAST_EV(xcb_unmap_notify_event_t);
 
+    loutI << "e->event" << e->event << " e->window" << e->window << loutEND;
+
     client* c = wm->client_from_window(&e->window);
     if (!c) return;
 
