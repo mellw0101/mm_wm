@@ -4473,10 +4473,10 @@ class window
         operator uint32_t()
         {
             return _window;
-
         }
     
-        window& operator=(uint32_t new_window) // Overload the assignment operator for uint32_t
+        // Overload the assignment operator for uint32_t
+        window& operator=(uint32_t new_window)
         {
             _window = new_window;
             return *this;
