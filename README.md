@@ -26,7 +26,7 @@ mm_wm is a minimalist window manager built exclusively with XCB. This design cho
 
 3. Build the project:
     ```sh
-    # NOTE: sudo is not needed if logged in as root
+    # NOTE: sudo is not needed if logged in as root # (It is highlly fround apon to run anything logged in as root (as opposed to using sudo to elivate priviliges) as this makes it very easy to get your network comprimised)
     
     sudo make depends # (to make dependencys based on distro (for now only 'apt/pacman' is supported))
     sudo make install # (to compile all source files into .o files then likes the .o files into the binary then installs mm_wm into /usr/local/bin (only run 'make' if you just want to comlile the binary without installing))
@@ -37,6 +37,16 @@ mm_wm is a minimalist window manager built exclusively with XCB. This design cho
     sudo make xorg_conf # (copies a xorg.conf file into /etc/X11/xorg.conf)
     ```
 
+## Set up startx for launching mm_wm
+1. Make a backup of old ~/.xinitrc, to do this run command:
+    ```sh
+    cp ~/.xinitrc ~/.xinitrc.backup
+
+2. Append 'exec mwm' into ~/.xinitrc:
+    ```sh
+    echo "exec mwm" > ~/.xinitrc
+
 ## Usage
-To start using mm_wm, append 'exec mwm' into ~/.xinitrc then run startx from tty
-```sh
+### Run 'startx' from a tty to launch mm_wm
+    ```sh
+    startx
