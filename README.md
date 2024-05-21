@@ -62,9 +62,29 @@ mm_wm is a minimalist window manager built exclusively with XCB. This design cho
 
 ## Usage
 
-### Run with 'startx' from tty (Simplest Method)
+1. Run with 'startx' from tty (Simplest Method):
+    ```sh
     startx
+    ```
 
-### Or
+Or
 
-### Manually add mw_wm to your display manager of choice
+2. Manually add mw_wm to your display manager of choice
+
+## Contributing
+
+Contributions are welcome!
+
+Please fork the repository and submit a pull request with your improvements or bug fixes.
+If you want to help me write any code, or if you want to help in other ways
+like light design for some image stuff so mostly png or any other format if i it works better.
+just contact me or send req
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Acknowledgements
+
+Special thanks to the XCB developer community for the amazing lib you have created.
+I must say that xcb is extreamly well-made, efficent, robust and lightwaight
