@@ -38,5 +38,5 @@ mm_wm is a minimalist window manager built exclusively with XCB. This design cho
     ```
 
 ## Usage
-```sh
 To start using mm_wm, append 'exec mwm' into ~/.xinitrc then run startx from tty
+```sh
