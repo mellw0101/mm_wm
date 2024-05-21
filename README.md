@@ -48,7 +48,4 @@ mm_wm is a minimalist window manager built exclusively with XCB. This design cho
     echo "exec mwm" > ~/.xinitrc
 
 ## Usage
-Run 'startx' from a tty to launch mm_wm:
-    ```
-    startx
-    ```
+Run ```startx``` from a tty
