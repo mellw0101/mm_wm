@@ -37,7 +37,7 @@ mm_wm is a minimalist window manager built exclusively with XCB. This design cho
     sudo make xorg_conf # (copies a xorg.conf file into /etc/X11/xorg.conf)
     ```
 
-## Set up startx for launching mm_wm
+## Set up startx
 
 1. Make a backup of old ~/.xinitrc, to do this run command:
     ```sh
@@ -48,4 +48,5 @@ mm_wm is a minimalist window manager built exclusively with XCB. This design cho
     echo "exec mwm" > ~/.xinitrc
 
 ## Usage
+
 Run ```startx``` from a tty
