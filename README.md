@@ -56,7 +56,9 @@ mm_wm is a minimalist window manager built exclusively with XCB. This design cho
     ```
 
 2. Append 'exec mwm' into ~/.xinitrc:
+    ```sh
     echo "exec mwm" > ~/.xinitrc
+    ```
 
 ## Usage
 
