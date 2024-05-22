@@ -59,7 +59,8 @@ LIBS = \
 	-lpthread		\
 	-liw			\
 	-lpulse			\
-	-ldbus-1
+	-ldbus-1		\
+	-lNXlib
 
 CC = \
 	clang

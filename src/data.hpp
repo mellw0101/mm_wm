@@ -11,6 +11,7 @@
 // #include "structs.hpp"
 // #include "structs.hpp"
 
+
 using namespace std;
 
 constexpr uint8_t transformValue(uint8_t input)

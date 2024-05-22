@@ -1,5 +1,4 @@
-#ifndef GLOBALS_H
-#define GLOBALS_H
+#pragma once
 
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
@@ -19,5 +18,3 @@ extern xcb_screen_t *screen;
 static xcb_font_t default_font;
 
 typedef xcb_void_cookie_t VoidC;
-
-#endif/* GLOBALS_H */

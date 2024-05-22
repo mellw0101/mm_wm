@@ -52,7 +52,6 @@
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH (the "Software") OR THE USE OR OTHER DEALINGS IN (the "Software").
 */
-
 #include <dbus-c++-1/dbus-c++/dbus.h>
 #include <array>
 #include <cmath>
@@ -146,6 +145,8 @@
 #include "tools.hpp"
 #include "prof.hpp"
 #include "color.hpp"
+#include <NXlib/color.h>
+#include <NXlib/window.h>
 
 /*
 #include "thread.hpp"
@@ -161,7 +162,7 @@
 */
 
 xcb_connection_t * conn = nullptr;
-static xcb_ewmh_connection_t * ewmh;
+xcb_ewmh_connection_t * ewmh = nullptr;
 static const xcb_setup_t * setup;
 static xcb_screen_iterator_t iter;
 xcb_screen_t *screen = nullptr;
@@ -2629,7 +2630,7 @@ class Directory_Searcher
         Directory_Searcher() {}
     
     // Methods.
-        void search(const vector<const char *> &directories, const string &searchString)
+        void search(const vector<const char*> &directories, const string &searchString)
         {
             results.clear();
             searchDirectories = directories;
@@ -2677,9 +2678,8 @@ class Directory_Searcher
     
     private:
     // Variabels.
-        vector<const char *>(searchDirectories);
-        vector<string>(results);
-
+        vector<const char *> searchDirectories;
+        vector<string> results;
 };
 
 class Directory_Lister
@@ -2856,7 +2856,7 @@ class File
         }  
 };
 
-extern char **environ;
+extern char** environ;
 class __pid_manager__
 {
     private:
@@ -4573,7 +4573,6 @@ class window
 
                 ConnSig(_window, XCB_EXPOSE,
                 {
-
                     draw_acc_16(_name.c_str());
                 });
 
@@ -4650,7 +4649,7 @@ class window
                 AutoTimer t(__func__);
                 xcb_reparent_window(conn, _window, parent, x, y);
                 xcb_flush(conn);
-            }          
+            }
              
             void kill()
             {
@@ -5067,7 +5066,8 @@ class window
             {
                 AutoTimer t(__func__);
 
-                xcb_change_property(
+                xcb_change_property
+                (
                     conn,
                     XCB_PROP_MODE_REPLACE,
                     _window,
@@ -5077,6 +5077,7 @@ class window
                     0,
                     0
                 );
+
                 xcb_flush(conn);
             }
         
@@ -5588,6 +5589,7 @@ class window
                     loutE << "internal parent: " <<  _parent << " does not match 'retrived_parent': " << p << loutEND;
                     _parent = p;
                 }
+
                 free(r);
                 return p;
             }
@@ -5597,7 +5599,7 @@ class window
                 return _parent;
             }
             
-            uint32_t *children(uint32_t *child_count)
+            uint32_t* children(uint32_t *child_count)
             {
                 *child_count = 0;
                 xcb_query_tree_cookie_t cookie = xcb_query_tree(conn, _window);
@@ -10493,6 +10495,8 @@ class __status_bar__
             SHUTDOWN_REBOOT,
             SHUTDOWN_SLEEP
         } window_type_t;
+
+        NXlib::window test_win;
 
         void init()
         {
