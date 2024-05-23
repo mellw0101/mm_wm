@@ -140,7 +140,6 @@
 
 #include "Log.hpp"
 #include "xcb.hpp"
-// Logger logger;
 #include "structs.hpp"
 #include "defenitions.hpp"
 #include "tools.hpp"
@@ -150,25 +149,15 @@
 #include <NXlib/window.h>
 #include <NXlib/Desktop.h>
 #include <NXlib/Key_Codes.h>
+#include <NXlib/Pid_Manager.h>
 
-/*
-#include "thread.hpp"
-#include "pty.h"
-#include <queue>
-#include <numeric>
-#include <optional>
-#include <limits>
-#include <new>
-#include <any>
-#include "data.hpp"
-#include "Event.hpp"
-*/
 
-xcb_connection_t * conn = nullptr;
-xcb_ewmh_connection_t * ewmh = nullptr;
-static const xcb_setup_t * setup;
+xcb_connection_t*            conn = nullptr;
+xcb_ewmh_connection_t*       ewmh = nullptr;
+static const xcb_setup_t*    setup;
 static xcb_screen_iterator_t iter;
-xcb_screen_t *screen = nullptr;
+xcb_screen_t*                screen = nullptr;
+
 
 #define DEFAULT_FONT "7x14"
 #define DEFAULT_FONT_WIDTH 7
@@ -1519,68 +1508,6 @@ class __signal_manager__
 };
 static __signal_manager__ *signal_manager(nullptr);
 
-class __window_attr__
-{
-    private:
-    /** @c Variabels   */
-        xcb_get_window_attributes_reply_t* reply = nullptr;
-        uint32_t _window;
-
-    /** @c Methods     */
-        xcb_get_window_attributes_cookie_t get_cookie__(uint32_t __window)
-        {
-            return xcb_get_window_attributes(conn, __window);
-        }
-        
-        void get_reply__()
-        {
-            reply = xcb_get_window_attributes_reply(conn, get_cookie__(_window), nullptr);
-        }
-    
-    public:
-    /** @c Constructor */
-        __window_attr__(uint32_t __window)
-        : _window(__window)
-        {
-            get_reply__();
-        }
-
-    /** @c Destructor  */
-        ~__window_attr__()
-        {
-            free(reply);  // Free the allocated memory
-        }
-    
-    /** @c Operators   */
-        // Deleted copy constructor and copy assignment operator to prevent copying
-        __window_attr__(const __window_attr__&) = delete;
-        __window_attr__& operator=(const __window_attr__&) = delete;
-
-        // Move constructor and move assignment operator
-        __window_attr__(__window_attr__&& other) noexcept : reply(other.reply)
-        {
-            other.reply = nullptr;
-        }
-
-        __window_attr__& operator=(__window_attr__&& other) noexcept
-        {
-            if (this != &other)
-            {
-                free(reply);  // Free existing reply
-                reply = other.reply;
-                other.reply = nullptr;
-            }
-
-            return *this;
-        }
-
-        // Public method to access the reply
-        xcb_get_window_attributes_reply_t *get() const
-        {
-            return reply;
-        }
-};
-
 class __crypto__
 {
     /* Defines */
@@ -2860,252 +2787,254 @@ class File
 };
 
 extern char** environ;
-class __pid_manager__
-{
-    private:
-    /* Structs     */
-        typedef struct {
-            pid_t  pid;
-            string name;
-        } pid_data_t;
+// class __pid_manager__
+// {
+//     private:
+//     /* Structs     */
+//         typedef struct {
+//             pid_t  pid;
+//             string name;
+//         } pid_data_t;
 
-    /* Variabels   */
-        vector<pid_data_t> _pid_vec;
+//     /* Variabels   */
+//         vector<pid_data_t> _pid_vec;
 
-    /* Methods     */
-        /* Pid Info    */
-            string pid_status__(pid_t __pid) {
-                string line_str = "/proc/" + to_string(__pid) + "/status";
-                ifstream file; file.open(line_str);
-                string var;
-                stringstream buffer;
-                while (getline(file, var)) {
-                    buffer << var << '\n';
+//     /* Methods     */
+//         /* Pid Info    */
+//             string pid_status__(pid_t __pid) {
+//                 string line_str = "/proc/" + to_string(__pid) + "/status";
+//                 ifstream file; file.open(line_str);
+//                 string var;
+//                 stringstream buffer;
+//                 while (getline(file, var)) {
+//                     buffer << var << '\n';
 
-                } string result; result = buffer.str();
+//                 } string result; result = buffer.str();
                 
-                loutI << result << '\n';
-                file.close();
-                return string();
+//                 loutI << result << '\n';
+//                 file.close();
+//                 return string();
 
-            }
-            string get_process_name_by_pid__(pid_t pid) {
-                string path = "/proc/" + std::to_string(pid) + "/comm";
-                ifstream commFile(path);
-                string name;
+//             }
+//             string get_process_name_by_pid__(pid_t pid) {
+//                 string path = "/proc/" + std::to_string(pid) + "/comm";
+//                 ifstream commFile(path);
+//                 string name;
 
-                if (commFile.good()) {
-                    getline(commFile, name);
-                    return name;
+//                 if (commFile.good()) {
+//                     getline(commFile, name);
+//                     return name;
                 
-                } else {
-                    return "Process not found";
+//                 } else {
+//                     return "Process not found";
 
-                }
+//                 }
 
-            }
-            string pid_cmd_line__(pid_t __pid) {
-                string line_str = "/proc/" + to_string(__pid) + "/cmdline";
-                ifstream file;
-                file.open(line_str);
-                string var;
-                stringstream buffer;
-                while (getline(file, var)) {
-                    buffer << var << '\n';
+//             }
+//             string pid_cmd_line__(pid_t __pid) {
+//                 string line_str = "/proc/" + to_string(__pid) + "/cmdline";
+//                 ifstream file;
+//                 file.open(line_str);
+//                 string var;
+//                 stringstream buffer;
+//                 while (getline(file, var)) {
+//                     buffer << var << '\n';
                 
-                } string result; result = buffer.str();
+//                 } string result; result = buffer.str();
 
-                loutI << result << '\n';
-                string test = result;
-                ifstream iss(test);
-                string token;
+//                 loutI << result << '\n';
+//                 string test = result;
+//                 ifstream iss(test);
+//                 string token;
 
-                vector<string> parts;
-                while (getline(iss, token, ' ')) {
-                    parts.push_back(token);
+//                 vector<string> parts;
+//                 while (getline(iss, token, ' ')) {
+//                     parts.push_back(token);
 
-                }
-                if (parts.size() == 1) {
-                    file.close();
-                    return "mainPid";
+//                 }
+//                 if (parts.size() == 1) {
+//                     file.close();
+//                     return "mainPid";
 
-                }
-                file.close();
+//                 }
+//                 file.close();
                 
-                return string();
+//                 return string();
 
-            }
-            string get_correct_process_name__(const string &__launchName) {
-                DIR* dir;
-                struct dirent* ent;
-                string path;
-                string line;
+//             }
+//             string get_correct_process_name__(const string &__launchName) {
+//                 DIR* dir;
+//                 struct dirent* ent;
+//                 string path;
+//                 string line;
 
-                vector<string> parts;
-                for (int i(0), start(0); i < __launchName.length(); ++i) {
-                    if (__launchName[i] == '-') {
-                        string s = __launchName.substr(start, i - start);
-                        parts.push_back(s);
-                        start = i + 1;
+//                 vector<string> parts;
+//                 for (int i(0), start(0); i < __launchName.length(); ++i) {
+//                     if (__launchName[i] == '-') {
+//                         string s = __launchName.substr(start, i - start);
+//                         parts.push_back(s);
+//                         start = i + 1;
 
-                    }
-                    if (i == (__launchName.length() - 1)) {
-                        string s = __launchName.substr(start, i - start);
-                        parts.push_back(s);
+//                     }
+//                     if (i == (__launchName.length() - 1)) {
+//                         string s = __launchName.substr(start, i - start);
+//                         parts.push_back(s);
 
-                    }
+//                     }
 
-                }
-                for (int i = 0; i < parts.size(); ++i) {
-                    if ((dir = opendir("/proc")) != NULL) {
-                        while ((ent = readdir(dir)) != NULL) {
-                            if (ent->d_type == DT_DIR) {
-                                path = std::string("/proc/") + ent->d_name + "/comm";
-                                std::ifstream comm(path.c_str());
-                                if (comm.good()) {
-                                    getline(comm, line);
-                                    if (line == parts[i]) {
-                                        return parts[i];
+//                 }
+//                 for (int i = 0; i < parts.size(); ++i) {
+//                     if ((dir = opendir("/proc")) != NULL) {
+//                         while ((ent = readdir(dir)) != NULL) {
+//                             if (ent->d_type == DT_DIR) {
+//                                 path = std::string("/proc/") + ent->d_name + "/comm";
+//                                 std::ifstream comm(path.c_str());
+//                                 if (comm.good()) {
+//                                     getline(comm, line);
+//                                     if (line == parts[i]) {
+//                                         return parts[i];
 
-                                    }
+//                                     }
 
-                                }
+//                                 }
 
-                            }/* Check if the directory is a PID */
+//                             }/* Check if the directory is a PID */
 
-                        } closedir(dir);
+//                         } closedir(dir);
 
-                    }
+//                     }
 
-                } return string();
+//                 } return string();
 
-            }
-            bool is_process_running__(const pid_t __pid) {
-                struct stat statBuf;
-                string procPath = "/proc/" + to_string(__pid);
-                return stat(procPath.c_str(), &statBuf) == 0;
-            }
+//             }
+//             bool is_process_running__(const pid_t __pid) {
+//                 struct stat statBuf;
+//                 string procPath = "/proc/" + to_string(__pid);
+//                 return stat(procPath.c_str(), &statBuf) == 0;
+//             }
 
-        /* Pid Killing */
-            bool send_signal__(const pid_t pid, int signal) {
-                return kill(pid, signal) == 0;
+//         /* Pid Killing */
+//             bool send_signal__(const pid_t pid, int signal) {
+//                 return kill(pid, signal) == 0;
 
-            }
-            bool send_sigterm__(pid_t __pid, const string &__name) {
-                if (kill(__pid, SIGTERM) == -1) {
-                    loutE << ERRNO_MSG("Error sending SIGTERM") << " Process " << __name << __pid << loutEND;
-                    return false;
+//             }
+//             bool send_sigterm__(pid_t __pid, const string &__name) {
+//                 if (kill(__pid, SIGTERM) == -1) {
+//                     loutE << ERRNO_MSG("Error sending SIGTERM") << " Process " << __name << __pid << loutEND;
+//                     return false;
 
-                }
+//                 }
 
-                int status;
-                pid_t result = waitpid(__pid, &status, 0); // Wait for the process to change state
-                if (result == -1) {
-                    loutE << ERRNO_MSG("Error waiting for process") << " Process " << __name << __pid << loutEND;
-                    return false;
+//                 int status;
+//                 pid_t result = waitpid(__pid, &status, 0); // Wait for the process to change state
+//                 if (result == -1) {
+//                     loutE << ERRNO_MSG("Error waiting for process") << " Process " << __name << __pid << loutEND;
+//                     return false;
                     
-                } 
-                if (!is_process_running__(__pid))/* Check if the child exited normally */ {
-                    loutI << "Process " << __name << __pid << " terminated successfully with exit status " << WEXITSTATUS(status) << loutEND;
-                    return true;
+//                 } 
+//                 if (!is_process_running__(__pid))/* Check if the child exited normally */ {
+//                     loutI << "Process " << __name << __pid << " terminated successfully with exit status " << WEXITSTATUS(status) << loutEND;
+//                     return true;
 
-                } else {
-                    loutI << "Process " << __name << __pid << " did not terminate successfully." << loutEND;
-                    return false;
+//                 } else {
+//                     loutI << "Process " << __name << __pid << " did not terminate successfully." << loutEND;
+//                     return false;
 
-                }
+//                 }
 
-            }
-            void send_sigkill__(pid_t __pid, const string &__name) {
-                if (send_signal__(__pid, SIGKILL)) {
-                    loutI << "SIGKILL signal sent to process " << __name << __pid << " for forceful termination." << loutEND;
+//             }
+//             void send_sigkill__(pid_t __pid, const string &__name) {
+//                 if (send_signal__(__pid, SIGKILL)) {
+//                     loutI << "SIGKILL signal sent to process " << __name << __pid << " for forceful termination." << loutEND;
 
-                } else {
-                    loutE << "Failed to send SIGKILL to process " << __name << __pid << loutEND;
+//                 } else {
+//                     loutE << "Failed to send SIGKILL to process " << __name << __pid << loutEND;
 
-                }
+//                 }
 
-            }
-            void kill_pid__(pid_t __pid, const string &__name) {
-                if (is_process_running__(__pid)) {
-                    if (!send_sigterm__(__pid, __name)) {
-                        loutI << "Process " << __name << __pid << " still running forcefully killing" << loutEND;
-                        send_sigkill__(__pid, __name);
+//             }
+//             void kill_pid__(pid_t __pid, const string &__name) {
+//                 if (is_process_running__(__pid)) {
+//                     if (!send_sigterm__(__pid, __name)) {
+//                         loutI << "Process " << __name << __pid << " still running forcefully killing" << loutEND;
+//                         send_sigkill__(__pid, __name);
 
-                    }
+//                     }
 
-                }
+//                 }
 
-            }
+//             }
 
-        void check_vec__() {
-            for (int i = 0; i < _pid_vec.size(); ++i) {
-                if (!is_process_running__(_pid_vec[i].pid)) {
-                    remove_element_from_vec(_pid_vec, i);
+//         void check_vec__() {
+//             for (int i = 0; i < _pid_vec.size(); ++i) {
+//                 if (!is_process_running__(_pid_vec[i].pid)) {
+//                     remove_element_from_vec(_pid_vec, i);
 
-                }
+//                 }
 
-            }
+//             }
 
-        }
+//         }
 
-    public:
-    /* Methods     */
-        void add_pid(pid_t __pid) {
-            _pid_vec.push_back({__pid, get_process_name_by_pid__(__pid)});
-            check_vec__();
+//     public:
+//     /* Methods     */
+//         void add_pid(pid_t __pid) {
+//             _pid_vec.push_back({__pid, get_process_name_by_pid__(__pid)});
+//             check_vec__();
 
-        }
-        void kill_all_pids() {
-            for (pid_data_t pid_data : _pid_vec) {
-                if (pid_data.name == "code") continue;
-                kill_pid__(pid_data.pid, pid_data.name);
+//         }
+//         void kill_all_pids() {
+//             for (pid_data_t pid_data : _pid_vec) {
+//                 if (pid_data.name == "code") continue;
+//                 kill_pid__(pid_data.pid, pid_data.name);
 
-            }
+//             }
 
-        }
-        void check_pid(pid_t __pid) {
-            if (__pid == 0) return;
+//         }
+//         void check_pid(pid_t __pid) {
+//             if (__pid == 0) return;
 
-            bool found = false;
-            for (int i = 0; i < _pid_vec.size(); ++i) {
-                if (__pid == _pid_vec[i].pid) {
-                    found = true;
-                    break;
+//             bool found = false;
+//             for (int i = 0; i < _pid_vec.size(); ++i) {
+//                 if (__pid == _pid_vec[i].pid) {
+//                     found = true;
+//                     break;
 
-                }
+//                 }
 
-            }
-            if (!found) {
-                add_pid(__pid);
+//             }
+//             if (!found) {
+//                 add_pid(__pid);
 
-            }
+//             }
 
-        }
-        void remove_pid(pid_t __pid) {
-            for (int i = 0; i < _pid_vec.size(); ++i) {
-                if (_pid_vec[i].pid == __pid) {
-                    remove_element_from_vec(_pid_vec, i);
+//         }
+//         void remove_pid(pid_t __pid) {
+//             for (int i = 0; i < _pid_vec.size(); ++i) {
+//                 if (_pid_vec[i].pid == __pid) {
+//                     remove_element_from_vec(_pid_vec, i);
 
-                }
+//                 }
 
-            }
+//             }
 
-        }
-        void list_pids() {
-            check_vec__();
-            for (int i = 0; i < _pid_vec.size(); ++i) {
-                loutI << "pid" << _pid_vec[i].pid << " name: " << _pid_vec[i].name << '\n';
+//         }
+//         void list_pids() {
+//             check_vec__();
+//             for (int i = 0; i < _pid_vec.size(); ++i) {
+//                 loutI << "pid" << _pid_vec[i].pid << " name: " << _pid_vec[i].name << '\n';
 
-            } loutI << "Total running pids" << _pid_vec.size() << loutEND;
+//             } loutI << "Total running pids" << _pid_vec.size() << loutEND;
 
-        }
+//         }
 
-    /* Constructor */
-        __pid_manager__() {}
+//     /* Constructor */
+//         __pid_manager__() {}
 
-};
-static __pid_manager__ *pid_manager(nullptr);
+// };
+// static __pid_manager__* pid_manager = nullptr;
+
+static NXlib::Pid_Manager* pid_manager = nullptr;
 
 class Launcher
 {
@@ -3186,137 +3115,6 @@ class Launcher
         File file;
 };
 
-class __key_codes__
-{
-    public:
-    // constructor and destructor.
-        __key_codes__() 
-        : keysyms(nullptr) {}
-
-        ~__key_codes__()
-        {
-            free(keysyms);
-        }
-
-    // methods.
-        void init()
-        {
-            keysyms = xcb_key_symbols_alloc(conn);
-            if (keysyms)
-            {
-                map<uint32_t, xcb_keycode_t *> key_map = {
-                    { A,            &a         },
-                    { B,            &b         },
-                    { C,            &c         },
-                    { D,            &d         },
-                    { E,            &e         },
-                    { F,            &f         },
-                    { G,            &g         },
-                    { H,            &h         },
-                    { I,            &i         },
-                    { J,            &j         },
-                    { K,            &k         },
-                    { L,            &l         },
-                    { M,            &m         },
-                    { _N,           &n         },
-                    { O,            &o         },
-                    { P,            &p         },
-                    { Q,            &q         },
-                    { R,            &r         },
-                    { S,            &s         },
-                    { T,            &t         },
-                    { U,            &u         },
-                    { V,            &v         },
-                    { W,            &w         },
-                    { _X,           &x         },
-                    { _Y,           &y         },
-                    { Z,            &z         },
-
-                    { SPACE_BAR,    &space_bar },
-                    { ENTER,        &enter     },
-                    { DELETE,       &_delete   },
-
-                    { F11,          &f11       },
-                    { N_1,          &n_1       },
-                    { N_2,          &n_2       },
-                    { N_3,          &n_3       },
-                    { N_4,          &n_4       },
-                    { N_5,          &n_5       },
-                    { R_ARROW,      &r_arrow   },
-                    { L_ARROW,      &l_arrow   },
-                    { U_ARROW,      &u_arrow   },
-                    { D_ARROW,      &d_arrow   },
-                    { TAB,          &tab       },
-                    { SUPER_L,      &super_l   },
-                    { MINUS,        &minus     },
-                    { UNDERSCORE,   &underscore}
-                };
-                
-                for (auto &pair : key_map)
-                {
-                    xcb_keycode_t * keycode = xcb_key_symbols_get_keycode(keysyms, pair.first);
-                    if (keycode)
-                    {
-                        *(pair.second) = *keycode;
-                        free(keycode);
-                    }
-                }
-            }
-        }
-
-        constexpr uint8_t char_to_keycode__(int8_t c)
-        {
-            switch (c)
-            {
-                case 'a': return this->a;
-                case 'b': return this->b;
-                case 'c': return this->c;
-                case 'd': return this->d;
-                case 'e': return this->e;
-                case 'f': return this->f;
-                case 'g': return this->g;
-                case 'h': return this->h;
-                case 'i': return this->i;
-                case 'j': return this->j;
-                case 'k': return this->k;
-                case 'l': return this->l;
-                case 'm': return this->m;
-                case 'n': return this->n;
-                case 'o': return this->o;
-                case 'p': return this->p;
-                case 'q': return this->q;
-                case 'r': return this->r;
-                case 's': return this->s;
-                case 't': return this->t;
-                case 'u': return this->u;
-                case 'v': return this->v;
-                case 'w': return this->w;
-                case 'x': return this->x;
-                case 'y': return this->y;
-                case 'z': return this->z;
-                case '-': return this->minus;
-                case ' ': return this->space_bar;
-            }
-
-            return (uint8_t)0;
-        }
-
-    // variabels.
-        xcb_keycode_t
-            a{}, b{}, c{}, d{}, e{}, f{}, g{}, h{}, i{}, j{}, k{}, l{}, m{},
-            n{}, o{}, p{}, q{}, r{}, s{}, t{}, u{}, v{}, w{}, x{}, y{}, z{},
-            
-            space_bar{}, enter{},
-
-            f11{}, n_1{}, n_2{}, n_3{}, n_4{}, n_5{}, r_arrow{},
-            l_arrow{}, u_arrow{}, d_arrow{}, tab{}, _delete{},
-            super_l{}, minus{}, underscore{};
-
-    private:
-    // variabels.
-        xcb_key_symbols_t * keysyms;
-};
-
 
 static void buttonPressH(xcb_generic_event_t* ev);
 static void keyPressH(xcb_generic_event_t *ev);
@@ -3334,7 +3132,7 @@ class evH
 {
     private:
         xcb_generic_event_t *ev;
-        __key_codes__ key_codes;
+        NXlib::Key_Codes key_codes;
         bool running = true;
 
     public:
@@ -3581,7 +3379,7 @@ class __event_handler__
 
     public:
     /* Variabels */
-        __key_codes__ key_codes;
+        NXlib::Key_Codes key_codes;
         mutex event_mutex;
 
     /* Methods   */
@@ -15589,7 +15387,7 @@ void setup_wm()
     NEW_CLASS(network,         __network__        ) {}
     NEW_CLASS(screen_settings, __screen_settings__) { screen_settings->init(); }
     NEW_CLASS(dock,            __dock__           ) { dock->init(); }
-    NEW_CLASS(pid_manager,     __pid_manager__    ) {}
+    NEW_CLASS(pid_manager,     NXlib::Pid_Manager ) {}
     
     ev_sigs = new __ev_sigs;
     NEW_CLASS(ddTerm,          DropDownTerm       ) { ddTerm->init(); }
