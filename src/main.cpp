@@ -52,6 +52,7 @@
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH (the "Software") OR THE USE OR OTHER DEALINGS IN (the "Software").
 */
+
 #include <dbus-c++-1/dbus-c++/dbus.h>
 #include <array>
 #include <cmath>
@@ -8430,18 +8431,16 @@ class client
 *********************************************************************/
 
 
-class desktop
+class Desktop
 {
-    public:
-    // Variabels
-        vector<client *>(current_clients);
-        client *focused_client = nullptr;
-        uint16_t desktop;
-        const uint16_t x = 0;
-        const uint16_t y = 0;
-        uint16_t width;
-        uint16_t height;
-
+public:
+    vector<client*> current_clients;
+    client* focused_client = nullptr;
+    uint16_t desktop;
+    const uint16_t x = 0;
+    const uint16_t y = 0;
+    uint16_t width;
+    uint16_t height;
 };
 
 
@@ -8602,129 +8601,125 @@ class Entry
 namespace
 {
     #define CONTEXT_MENU_EVENT_MASK \
-        XCB_EVENT_MASK_FOCUS_CHANGE | \
+        (XCB_EVENT_MASK_FOCUS_CHANGE | \
         XCB_EVENT_MASK_ENTER_WINDOW | \
         XCB_EVENT_MASK_LEAVE_WINDOW | \
         XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | \
-        XCB_EVENT_MASK_POINTER_MOTION
+        XCB_EVENT_MASK_POINTER_MOTION)
 }
 
 
 class context_menu
 {
-    private:
-    /* Variabels */
-        int16_t  _x = 0, _y = 0;
-        uint32_t _width = 120, _height = 20;
+public:
+    window context_window;
 
-        int border_size = 1;
-        vector<Entry> entries;
+    void show()
+    {
+        _x = m_pointer->x();
+        _y = m_pointer->y();
 
-    /* Methods   */
-        void create_dialog_win_()
+        for (i32 i(0), max_len(0); i < entries.size(); ++i)
         {
-            context_window.create_window
+            if (entries[i].name.length() > max_len)
+            {
+                max_len = static_cast<i32>(entries[i].name.length());
+                _width = ((max_len + 2) * DEFAULT_FONT_WIDTH);
+            }
+        }
+
+        u16 const new_height = (entries.size() * _height);
+
+        if (_y + new_height > screen->height_in_pixels)
+        {
+            _y = static_cast<i16>( screen->height_in_pixels - new_height );
+        }
+
+        if (_x + _width > screen->width_in_pixels)
+        {
+            _x = static_cast<i16>( screen->width_in_pixels - _width );
+        }
+
+        context_window.x_y_width_height((_x - BORDER_SIZE), (_y - BORDER_SIZE), _width, new_height);
+        context_window.map();
+        context_window.focus();
+
+        ConnSig(context_window, HIDE_CONTEXT_MENU,
+        {
+            hide_();
+        });
+
+        make_entries_();
+    }
+
+    void add_entry(const string& name, const function<void()> &action)
+    {
+        Entry entry;
+        entry.name = name;
+        entry.action = action;
+        entries.push_back(entry);
+    }
+
+    context_menu()
+    {
+        create_dialog_win_();
+    }
+
+private:
+    i16 _x = 0;
+    i16 _y = 0;
+    u16 _width = 120;
+    u16 _height = 20;
+
+    vector<Entry> entries;
+
+    void create_dialog_win_()
+    {
+        context_window.create_window
+        (
+            screen->root,
+            0,
+            0,
+            _width,
+            _height,
+            DARK_GREY,
+            CONTEXT_MENU_EVENT_MASK,
+            RAISE
+        );
+
+        ConnSig(context_window,L_MOUSE_BUTTON_EVENT,
+        {
+            hide_();
+        });
+    }
+
+    void hide_()
+    {
+        context_window.unmap();
+        context_window.kill();
+
+        for (auto &entrie : entries)
+        {
+            entrie.window.kill();
+        }
+    }
+
+    void make_entries_()
+    {
+        for (int i(0); i < entries.size(); ++i)
+        {
+            entries[i].make_window
             (
-                screen->root,
+                context_window,
                 0,
-                0,
+                static_cast<i16>(_height * i),
                 _width,
-                _height,
-                DARK_GREY,
-                CONTEXT_MENU_EVENT_MASK,
-                RAISE
+                _height
             );
 
-            ConnSig(context_window,L_MOUSE_BUTTON_EVENT,
-            {
-                hide_();
-            });
+            Emit(entries[i].window, XCB_EXPOSE);
         }
-
-        void hide_()
-        {
-            context_window.unmap();
-            context_window.kill();
-
-            for (int i = 0; i < entries.size(); ++i)
-            {
-                entries[i].window.kill();
-            }
-        }
-        
-        void make_entries_()
-        {
-            for (int i(0); i < entries.size(); ++i)
-            {
-                entries[i].make_window
-                (
-                    context_window,
-                    0,
-                    (_height * i),
-                    _width,
-                    _height
-                );
-
-                Emit(entries[i].window, XCB_EXPOSE);
-            }
-        }
-    
-    public:
-    /* Variabels */
-        window context_window;
-    
-    /* Methods   */
-        void show()
-        {
-            _x = m_pointer->x();
-            _y = m_pointer->y();
-            
-            for (int i(0), max_len(0); i < entries.size(); ++i)
-            {
-                if (entries[i].name.length() > max_len)
-                {
-                    max_len = entries[i].name.length();
-                    _width = ((max_len + 2) * DEFAULT_FONT_WIDTH);
-                }
-            }
-
-            uint16_t new_height = (entries.size() * _height);
-
-            if (_y + new_height > screen->height_in_pixels)
-            {
-                _y = ( screen->height_in_pixels - new_height );
-            }
-
-            if (_x + _width > screen->width_in_pixels)
-            {
-                _x = ( screen->width_in_pixels - _width );
-            }
-
-            context_window.x_y_width_height((_x - BORDER_SIZE), (_y - BORDER_SIZE), _width, new_height);
-            context_window.map();
-            context_window.focus();
-
-            ConnSig(context_window, HIDE_CONTEXT_MENU,
-            {
-                hide_();
-            });
-
-            make_entries_();
-        }
-        
-        void add_entry(const string& name, function<void()> action)
-        {
-            Entry entry;
-            entry.name = name;
-            entry.action = action;
-            entries.push_back(entry);
-        }
-
-    /* Constructor */
-        context_menu()
-        {
-            create_dialog_win_();
-        }
+    }
 };
 
 
@@ -8769,9 +8764,9 @@ class Window_Manager
         
         context_menu* context_menu = nullptr;
         vector<client*> client_list;
-        vector<desktop*> desktop_list;
+        vector<Desktop*> desktop_list;
         client* focused_client = nullptr;
-        desktop* cur_d = nullptr;
+        Desktop* cur_d = nullptr;
 
     /* Methods     */
         /* Main         */
@@ -9380,7 +9375,7 @@ class Window_Manager
                     if (desktop_list[i]->desktop == n) return;
                 }
 
-                desktop *d = new desktop;
+                Desktop *d = new Desktop;
                 
                 d->desktop = n;
                 d->width   = screen->width_in_pixels;
@@ -9485,16 +9480,16 @@ class Window_Manager
                 vector<client *>().swap(vec);
             }
 
-            void delete_desktop_vec__(vector<desktop *>& vec)
+            void delete_desktop_vec__(vector<Desktop *>& vec)
             {
-                for (desktop *d : vec)
+                for (Desktop *d : vec)
                 {
                     delete_client_vec__(d->current_clients);
                     delete d;
                 }
 
                 vec.clear();
-                vector<desktop *>().swap(vec);
+                vector<Desktop *>().swap(vec);
             }
 
         /* Client */
@@ -12841,7 +12836,7 @@ class mv_client
 };
 
 
-/*********************************************************************
+/*********************************************************************<
 *****************<<   @class @c change_desktop    >>******************
 *********************************************************************/
 
@@ -13442,7 +13437,7 @@ class resize_client
                 client(*&c);
                 client(*c2);
                 edge(c2_edge);
-                pointer(pointer); 
+                pointer pointer;
                 chrono::high_resolution_clock::time_point lastUpdateTime = chrono::high_resolution_clock::now();
                 vector<uint32_t> expose_evVec;
                 #ifdef ARMV8_BUILD
