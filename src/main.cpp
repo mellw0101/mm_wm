@@ -149,6 +149,7 @@
 #include <NXlib/color.h>
 #include <NXlib/window.h>
 #include <NXlib/Desktop.h>
+#include <NXlib/Key_Codes.h>
 
 /*
 #include "thread.hpp"
@@ -8432,7 +8433,7 @@ class client
 *********************************************************************/
 
 
-class Key_Codes
+/* class Key_Codes
 {
     public:
     // constructor and destructor.
@@ -8528,7 +8529,7 @@ class Key_Codes
     private:
     // variabels.
         xcb_key_symbols_t *keysyms;
-};
+}; */
 
 
 /*********************************************************************
@@ -8743,7 +8744,7 @@ class Window_Manager
         Launcher launcher;
         pointer pointer;
         win_data data;
-        Key_Codes key_codes;
+        NXlib::Key_Codes key_codes;
         
         context_menu* context_menu = nullptr;
         vector<client*> client_list;
