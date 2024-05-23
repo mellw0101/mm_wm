@@ -148,6 +148,7 @@
 #include "color.hpp"
 #include <NXlib/color.h>
 #include <NXlib/window.h>
+#include <NXlib/Desktop.h>
 
 /*
 #include "thread.hpp"
@@ -8427,24 +8428,6 @@ class client
 
 
 /*********************************************************************
-*****************<<       @class @c desktop       >>******************
-*********************************************************************/
-
-
-class Desktop
-{
-public:
-    vector<client*> current_clients;
-    client* focused_client = nullptr;
-    uint16_t desktop;
-    const uint16_t x = 0;
-    const uint16_t y = 0;
-    uint16_t width;
-    uint16_t height;
-};
-
-
-/*********************************************************************
 *****************<<      @class @c Key_Codes      >>******************
 *********************************************************************/
 
@@ -8764,9 +8747,9 @@ class Window_Manager
         
         context_menu* context_menu = nullptr;
         vector<client*> client_list;
-        vector<Desktop*> desktop_list;
+        vector<NXlib::Desktop*> desktop_list;
         client* focused_client = nullptr;
-        Desktop* cur_d = nullptr;
+        NXlib::Desktop* cur_d = nullptr;
 
     /* Methods     */
         /* Main         */
@@ -9375,7 +9358,7 @@ class Window_Manager
                     if (desktop_list[i]->desktop == n) return;
                 }
 
-                Desktop *d = new Desktop;
+                NXlib::Desktop *d = new NXlib::Desktop;
                 
                 d->desktop = n;
                 d->width   = screen->width_in_pixels;
@@ -9480,16 +9463,16 @@ class Window_Manager
                 vector<client *>().swap(vec);
             }
 
-            void delete_desktop_vec__(vector<Desktop *>& vec)
+            void delete_desktop_vec__(vector<NXlib::Desktop*>& vec)
             {
-                for (Desktop *d : vec)
+                for (NXlib::Desktop* d : vec)
                 {
                     delete_client_vec__(d->current_clients);
                     delete d;
                 }
 
                 vec.clear();
-                vector<Desktop *>().swap(vec);
+                vector<NXlib::Desktop*>().swap(vec);
             }
 
         /* Client */
