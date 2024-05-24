@@ -560,7 +560,7 @@ namespace // Tools
      * NOTE: This function will return "unknown" upon error.
      *
      * @return The username as a const reference to std::string.
-     */
+    */
     const string &get_user_name()
     {
         static const string username = []() -> string
