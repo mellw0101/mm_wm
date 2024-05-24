@@ -12,5 +12,8 @@
         "variant": "cpp",
         "cstddef": "cpp",
         "tuple": "cpp"
-    }
+    },
+    "editor.fontSize": 13,
+    "editor.fontFamily": "hack, 'Droid Sans Mono', 'monospace', monospace",
+    "C_Cpp.intelliSenseEngine": "disabled"
 }
