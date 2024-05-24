@@ -13465,7 +13465,6 @@ private:
                     client* c = wm->client_from_any_window(&e->event);
                     if (!c)
                         return;
-
                     tile(c, TILE::LEFT);
                     return;
                 }
@@ -13600,7 +13599,7 @@ private:
                 case SUPER:
                 {
                     client *c =
-    signal_manager->_window_client_map.retrive(e->event); if ( !c ) return;
+                    signal_manager->_window_client_map.retrive(e->event); if ( !c ) return;
                     tile(c, TILE::DOWN);
                     return;
                 }

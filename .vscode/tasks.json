@@ -13,7 +13,7 @@
             "detail": "build the bin"
         },
         {
-            "label": "build and install",
+            "label": "test",
             "type": "shell",
             "command" : "sudo make -j8 install",
             "problemMatcher": ["$gcc"],

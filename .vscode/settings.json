@@ -1,19 +1,41 @@
 {
-    "files.associations": {
-        "algorithm": "cpp",
-        "unordered_map": "cpp",
-        "fstream": "cpp",
-        "forward_list": "cpp",
-        "list": "cpp",
-        "string": "cpp",
-        "functional": "cpp",
-        "type_traits": "cpp",
-        "ratio": "cpp",
-        "variant": "cpp",
-        "cstddef": "cpp",
-        "tuple": "cpp"
-    },
-    "editor.fontSize": 13,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "cmake.configureOnOpen": true,
+    "cmake.generator": "Ninja",
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    "editor.formatOnSave": true,
+    "C_Cpp.intelliSenseEngineFallback": "disabled",
+    "C_Cpp.default.compilerPath": "/usr/bin/clang++",
     "editor.fontFamily": "hack, 'Droid Sans Mono', 'monospace', monospace",
-    "C_Cpp.intelliSenseEngine": "disabled"
+    "editor.fontSize": 13,
+    "C_Cpp.default.intelliSenseMode": "linux-clang-x64",
+    "cmake.options.statusBarVisibility": "visible",
+    "cmake.options.advanced": {
+        "build": {
+            "statusBarVisibility": "inherit",
+            "inheritDefault": "visible"
+        },
+        "launch": {
+            "statusBarVisibility": "inherit",
+            "inheritDefault": "visible"
+        },
+        "debug": {
+            "statusBarVisibility": "inherit",
+            "inheritDefault": "visible"
+        }
+    },
+    "C_Cpp.clang_format_fallbackStyle": "Google",
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "C_Cpp.codeAnalysis.clangTidy.useBuildPath": true,
+    "C_Cpp.codeAnalysis.clangTidy.path": "/usr/bin/clang-tidy",
+    "clang-format.executable": "/usr/bin/clang-format",
+    "editor.defaultFormatter": "xaver.clang-format",
+    "C_Cpp.intelliSenseCachePath": "~/vscode_cache",
+    "C_Cpp.intelliSenseMemoryLimit": 16384,
+    "vsintellicode.modify.editor.suggestSelection": "enabled",
+    "editor.inlineSuggest.enabled": true,
+    "editor.suggest.showInlineDetails": true,
+    "editor.suggest.insertMode": "replace"
 }
