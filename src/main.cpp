@@ -145,7 +145,6 @@
 #include "tools.hpp"
 #include "prof.hpp"
 #include "color.hpp"
-#include <NXlib/color.h>
 #include <NXlib/window.h>
 #include <NXlib/Key_Codes.h>
 #include <NXlib/Pid_Manager.h>
@@ -269,32 +268,6 @@ vector<client *> cli_tasks; */
             }                                                                \
         }                                                                    \
     })
-
-#define RETURN_IF(__statement)  \
-    if (__statement)            \
-    {                           \
-        return;                 \
-    }
-
-#define CONTINUE_IF(__statement) \
-    if (__statement)             \
-    {                            \
-        continue;                \
-    }
-
-#define GET_CLIENT_FROM_WINDOW(__window) \
-    client *c = wm->client_from_any_window(&__window); \
-    RETURN_IF(c == nullptr)
-
-static string user;
-#define USER \
-    user
-
-#define USER_PATH_PREFIX(__address) \
-    "/home/" + user + __address
-
-#define USER_PATH_PREFIX_C_STR(__address) \
-    string("/home/" + user + __address).c_str()
 
 #define SCREEN_CENTER_X(__window_width)  ((screen->width_in_pixels / 2) - (__window_width / 2))
 #define SCREEN_CENT_X()                  (screen->width_in_pixels / 2)
@@ -6970,14 +6943,14 @@ class client
             //     }
             // }
 
-            window &operator[](size_t index)
+            NXlib::window &operator[](size_t index)
             {
                 return border[index];
             }
 
             // client_border_decor() { create_arr(); }
             // DynamicArray<window> border;
-            FixedArray<window, 8> border;
+            FixedArray<NXlib::window, 8> border;
         };
 
         struct __atoms__
@@ -6993,7 +6966,8 @@ class client
         };
 
     /* Variabels   */
-        window win, frame, titlebar, close_button, max_button, min_button, icon;
+        window win, frame, titlebar, close_button, max_button, min_button;
+        NXlib::window icon;
 
         size_pos ogsize, tile_ogsize, max_ewmh_ogsize, max_button_ogsize;
         
@@ -8039,9 +8013,8 @@ class client
                 NONE,
                 MAP,
                 nullptr,
-                CURSOR::left_side
+                NXlib::Cursor_t::left_side
             );
-            xcb_flush(conn);
 
             CWC(border[left]);
             border[left].grab_button({{L_MOUSE_BUTTON, NULL}});
@@ -8057,9 +8030,8 @@ class client
                 NONE,
                 MAP,
                 nullptr,
-                CURSOR::right_side
+                NXlib::Cursor_t::right_side
             );
-            XCB::flush();
 
             CWC(border[right]);
             border[right].grab_button({{L_MOUSE_BUTTON, NULL}});
@@ -8075,9 +8047,8 @@ class client
                 NONE,
                 MAP,
                 nullptr,
-                CURSOR::top_side
+                NXlib::Cursor_t::top_side
             );
-            XCB::flush();
 
             CWC(border[top]);
             border[top].grab_button({{L_MOUSE_BUTTON, NULL}});
@@ -8093,9 +8064,8 @@ class client
                 NONE,
                 MAP,
                 nullptr,
-                CURSOR::bottom_side
+                NXlib::Cursor_t::bottom_side
             );
-            XCB::flush();
             
             CWC(border[bottom]);
             border[bottom].grab_button({{L_MOUSE_BUTTON, NULL}});
@@ -8111,9 +8081,8 @@ class client
                 NONE,
                 MAP,
                 nullptr,
-                CURSOR::top_left_corner
+                NXlib::Cursor_t::top_left_corner
             );
-            XCB::flush();
 
             CWC(border[top_left]);
             border[top_left].grab_button({{L_MOUSE_BUTTON, NULL}});
@@ -8129,7 +8098,7 @@ class client
                 NONE,
                 MAP,
                 nullptr,
-                CURSOR::top_right_corner
+                NXlib::Cursor_t::top_right_corner
             );
             XCB::flush();
             
@@ -8147,7 +8116,7 @@ class client
                 NONE,
                 MAP,
                 nullptr,
-                CURSOR::bottom_left_corner
+                NXlib::Cursor_t::bottom_left_corner
             );
             XCB::flush();
 
@@ -8165,7 +8134,7 @@ class client
                 NONE,
                 MAP,
                 nullptr,
-                CURSOR::bottom_right_corner
+                NXlib::Cursor_t::bottom_right_corner
             );
             XCB::flush();
             
@@ -8186,9 +8155,9 @@ class client
                 BORDER_SIZE,
                 BUTTON_SIZE,
                 BUTTON_SIZE,
-                BLACK,
+                NXlib::BLACK,
                 NONE,
-                MAP
+                NXlib::MAP_WINDOW
             );
 
             xcb_flush(conn);
@@ -9545,12 +9514,18 @@ class __network__
             getifaddrs(&ifAddrStruct);
             for (ifa = ifAddrStruct; ifa; ifa = ifa->ifa_next)
             {
-                CONTINUE_IF(ifa->ifa_addr == nullptr);
-                if (ifa->ifa_addr->sa_family == AF_INET) // check it is IP4
+                if (ifa->ifa_addr == nullptr)
+                {
+                    continue;
+                }
+
+                // check it is IP4
+                if (ifa->ifa_addr->sa_family == AF_INET)
                 {
                     // is a valid IP4 Address
                     tmpAddrPtr = &((struct sockaddr_in*)ifa->ifa_addr)->sin_addr;
                     char addressBuffer[INET_ADDRSTRLEN];
+
                     inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
                     if (addressBuffer[0] == '1'
                     &&  addressBuffer[1] == '9'
@@ -9571,7 +9546,11 @@ class __network__
                 }
             }
 
-            if (ifAddrStruct) freeifaddrs(ifAddrStruct);
+            if (ifAddrStruct)
+            {
+                freeifaddrs(ifAddrStruct);
+            }
+
             return result;
         }
 

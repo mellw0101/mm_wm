@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "algorithm": "cpp",
+        "unordered_map": "cpp",
+        "fstream": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "string": "cpp",
+        "functional": "cpp",
+        "type_traits": "cpp",
+        "ratio": "cpp",
+        "variant": "cpp",
+        "cstddef": "cpp",
+        "tuple": "cpp"
+    }
+}

@@ -486,7 +486,7 @@ class Sig
 
 #define FUNC_TIMER_SIGNAL 145
 #include <chrono>
-#include "Log.hpp"
+// #include "Log.hpp"
 
 class ScopeTimer
 {

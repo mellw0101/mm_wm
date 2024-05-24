@@ -2,7 +2,7 @@
 // #include "data.hpp"
 #include "defenitions.hpp"
 #include "tools.hpp"
-#include "Log.hpp"
+// #include "Log.hpp"
 #include <cstdint>
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
