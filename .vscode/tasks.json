@@ -1,0 +1,30 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "make -j8",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "build the bin"
+        },
+        {
+            "label": "build and install",
+            "type": "shell",
+            "command" : "sudo make -j8 install",
+            "problemMatcher": ["$gcc"],
+            "detail": "build and install the bin"
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "cmake --build build --target clean",
+            "group": "build",
+            "detail": "Generated task by CMake Tools"
+        }
+    ]
+}
