@@ -4,7 +4,7 @@
     "cmake.generator": "Ninja",
     "cmake.buildDirectory": "${workspaceFolder}/build",
     "cmake.sourceDirectory": "${workspaceFolder}",
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": false,
     "C_Cpp.intelliSenseEngineFallback": "disabled",
     "C_Cpp.default.compilerPath": "/usr/bin/clang++",
     "editor.fontFamily": "hack, 'Droid Sans Mono', 'monospace', monospace",

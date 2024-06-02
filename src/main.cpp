@@ -157,10 +157,6 @@ xcb_screen_t*                screen = nullptr;
 
 using namespace std;
 
-/* vector<pair<uint32_t, function<void()>>> expose_tasks;
-vector<client *> cli_tasks; */
-/* UInt32UnorderedMap<client *> cw_map; */
-
 #define NET_DEBUG false
 
 #define NEW_CLASS(__class_inst, __class_name)                                                                          \
@@ -3187,8 +3183,11 @@ public:
                     if (e->detail == key_codes.f11)
                     {
                         if ((c = C_RETRIVE(e->event)) != nullptr)
+                        {
                             C_EMIT(c, EWMH_MAXWIN_SIGNAL);
+                        }
                     }
+
                     keyPressH(ev);
                     break;
                 }
@@ -3334,23 +3333,23 @@ using Ev = const xcb_generic_event_t*;
 class __event_handler__
 {
     /* Defines   */
-#define EV_ID int event_id
+    #define EV_ID int event_id
 
-#define ADD_EV_ID_WIN(__window, __event_type) __window.add_event_id(__event_type, event_id)
+    #define ADD_EV_ID_WIN(__window, __event_type) __window.add_event_id(__event_type, event_id)
 
-#define ADD_EV_ID_IWIN(__event_type) add_event_id(__event_type, event_id)
+    #define ADD_EV_ID_IWIN(__event_type) add_event_id(__event_type, event_id)
 
-#define EV_LOOP(__type)                                                                                                \
-    case __type:                                                                                                       \
-    {                                                                                                                  \
-        for (const auto& pair : eventCallbacks[__type])                                                                \
-        {                                                                                                              \
-            pair.second(ev);                                                                                           \
-        }                                                                                                              \
-        continue;                                                                                                      \
-    }
+    #define EV_LOOP(__type)                                                                                                \
+        case __type:                                                                                                       \
+        {                                                                                                                  \
+            for (const auto& pair : eventCallbacks[__type])                                                                \
+            {                                                                                                              \
+                pair.second(ev);                                                                                           \
+            }                                                                                                              \
+            continue;                                                                                                      \
+        }
 
-#define MAKE_HANDLE_THREAD(__event_type) thread(handleEvent<__event_type>, (__event_type*)ev).detach()
+    #define MAKE_HANDLE_THREAD(__event_type) thread(handleEvent<__event_type>, (__event_type*)ev).detach()
 
 public:
     /* Variabels */
@@ -6704,42 +6703,21 @@ public:
     class client_border_decor
     {
         /* Defines */
-#define left 0
-#define right 1
-#define top 2
-#define bottom 3
-#define top_left 4
-#define top_right 6
-#define bottom_left 5
-#define bottom_right 7
+        #define left 0
+        #define right 1
+        #define top 2
+        #define bottom 3
+        #define top_left 4
+        #define top_right 6
+        #define bottom_left 5
+        #define bottom_right 7
 
     public:
-        // /* Variables */
-        //     window left;
-        //     window right;
-        //     window top;
-        //     window bottom;
-
-        //     window top_left;
-        //     window top_right;
-        //     window bottom_left;
-        //     window bottom_right;
-        // void create_arr()
-        // {
-        //     for (int i = 0; i < 8; ++i)
-        //     {
-        //         window w;
-        //         border.push_back(w);
-        //     }
-        // }
-
-        NXlib::window& operator[](size_t index)
+        auto operator [] (size_t index) -> NXlib::window&
         {
             return border[index];
         }
 
-        // client_border_decor() { create_arr(); }
-        // DynamicArray<window> border;
         FixedArray<NXlib::window, 8> border;
     };
 
@@ -7668,10 +7646,13 @@ public:
         window.draw_on_expose(name);
         window.highlight_on_hover();
 
-        ConnSig(window, L_MOUSE_BUTTON_EVENT, {
+        ConnSig(window, L_MOUSE_BUTTON_EVENT,
+        {
             Emit(window.parent(), HIDE_CONTEXT_MENU);
             if (action)
+            {
                 action();
+            }
         });
 
         ConnSig(window, R_MOUSE_BUTTON_EVENT, { Emit(window.parent(), HIDE_CONTEXT_MENU); });
@@ -7731,7 +7712,7 @@ public:
         make_entries_();
     }
 
-    void add_entry(const string& name, const function<void()>& action)
+    void add_entry(const string& name, const function<void()> &action)
     {
         Entry entry;
         entry.name   = name;
