@@ -7638,7 +7638,7 @@ public:
     function<void()> action;
 
     /* Methods */
-    void make_window(uint32_t parent, int16_t x, int16_t y, uint16_t width, uint16_t height)
+    void make_window(u32 parent, i16 x, i16 y, u16 width, u16 height)
     {
         AutoTimer t("Entry:make_window");
 
@@ -7655,7 +7655,10 @@ public:
             }
         });
 
-        ConnSig(window, R_MOUSE_BUTTON_EVENT, { Emit(window.parent(), HIDE_CONTEXT_MENU); });
+        ConnSig(window, R_MOUSE_BUTTON_EVENT,
+        {
+            Emit(window.parent(), HIDE_CONTEXT_MENU);
+        });
 
         window.grab_button({{L_MOUSE_BUTTON, XCB_BUTTON_MASK_ANY}});
     }
